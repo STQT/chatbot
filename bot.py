@@ -8,11 +8,13 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
 import random
 
-bot = Bot(token="387154755:AAHnj6qveu-S0YTGDmuwlcyXht6hVPTnCdo")
+BOT_TOKEN = "5042886538:AAGUs9OQ0Zd9_Nc33HpDX7IkePu3roh4BME"
+MONGO_URL = "mongodb+srv://vodiylik:vodiylik@cluster0.b18ay.mongodb.net/davraBot?retryWrites=true&w=majority"
+
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-cluster = MongoClient(
-    "mongodb+srv://vodiylik:vodiylik@cluster0.b18ay.mongodb.net/ChatBot?retryWrites=true&w=majority")
+cluster = MongoClient(MONGO_URL)
 collqueue = cluster.chatbot.queue
 collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
