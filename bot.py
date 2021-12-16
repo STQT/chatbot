@@ -21,6 +21,7 @@ collchats = cluster.chatbot.chats
 
 
 class SetBio(StatesGroup):
+    finding = State()
     user_bio = State()
     gender = State()
 
@@ -65,6 +66,20 @@ async def user_gender(message: types.Message):
         await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
 
 
+@dp.message_handler(commands=["qidiruv_jins", "set_finding", "new_finding", "about_finding"])
+async def user_finding(message: types.Message):
+    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+        await account_user(message)
+    else:
+        await SetBio.finding.set()
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("👨‍ Yigitlar"),
+              KeyboardButton("👩‍ Qizlar"),
+              KeyboardButton("👤 Muhim emas")
+              ]], resize_keyboard=True, one_time_keyboard=True)
+        await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
+
+
 @dp.message_handler(state=SetBio.user_bio)
 async def process_set_bio(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -77,24 +92,46 @@ async def process_set_bio(message: types.Message, state: FSMContext):
     await menu(message)
 
 
-@dp.message_handler(state=SetBio.gender)
-async def process_set_gender(message: types.Message, state: FSMContext):
+@dp.message_handler(state=SetBio.finding)
+async def process_set_finding(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data["gender"] = message.text[0]
-        if data['gender'] == '👨':
+        data["finding"] = message.text
+        if data['finding'] == "👨‍ Yigitlar":
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"gender": 'man'}})
-        elif data['gender'] == '👩':
+                "$set": {"finding": "👨‍ Yigitlar"}})
+        elif data['finding'] == '👩‍ Qiz bola':
             collusers.update_one({"_id": message.from_user.id}, {
-                "&set": {"gender": "woman"}
+                "$set": {"finding": "👩‍ Qiz bola"}
             })
         else:
             collusers.update_one({"_id": message.from_user.id}, {
-                "&set": {"gender": "another"}
+                "$set": {"finding": "👤 Muhim emas"}
             })
 
         await message.answer("Ma'lumotlar saqlandi")
         await state.finish()
+        await account_user(message)
+
+
+@dp.message_handler(state=SetBio.gender)
+async def process_set_gender(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["gender"] = message.text
+        if data['gender'] == "👨‍ O'g'il bola":
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👨‍ O'g'il bola"}})
+        elif data['gender'] == '👩‍ Qizlar':
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👩‍ Qizlar"}
+            })
+        else:
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👤 Muhim emas"}
+            })
+
+        await message.answer("Ma'lumotlar saqlandi")
+        await state.finish()
+        await account_user(message)
 
 
 @dp.message_handler(commands=["account"])
@@ -108,7 +145,9 @@ async def account_user(message: types.Message):
         text = f"👤Foydalanuvchi ID: {message.from_user.id}\n" \
                f"💵 Balans: {acc['balance']}\n" \
                f"Reyting: {acc['reputation']}\n" \
-               f"📝Bio: {acc['bio']}"
+               f"📝Bio: {acc['bio']}\n" \
+               f"Jins: {acc['gender']}\n" \
+               f"Qidiruv: {acc.get('finding', 'Yoʻq')}"
         keyboard = ReplyKeyboardMarkup(
             [
                 [
@@ -120,6 +159,7 @@ async def account_user(message: types.Message):
                 ],
                 [
                     KeyboardButton("✏ Jinsni o'zgartirish"),
+                    KeyboardButton("✏ Kim bilan suxbatlashish?"),
                 ],
                 [
                     KeyboardButton("🏠 Bosh menyu"),
@@ -334,6 +374,8 @@ async def some_text(message: types.Message):
         await stop_search_act(message)
     elif message.text == "✏ Jinsni o'zgartirish":
         await user_gender(message)
+    elif message.text == "✏ Kim bilan suxbatlashish?":
+        await user_finding(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
     elif message.text == "💔 Suhbatni yakunlash":
