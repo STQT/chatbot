@@ -59,8 +59,8 @@ async def user_gender(message: types.Message):
     else:
         await SetBio.gender.set()
         keyboard = ReplyKeyboardMarkup(
-            [[KeyboardButton("👨‍ O'g'il bola"),
-              KeyboardButton("👩‍ Qiz bola"),
+            [[KeyboardButton("👨‍ Yigit kishi"),
+              KeyboardButton("👩‍ Ayol kishi"),
               KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
@@ -73,8 +73,8 @@ async def user_finding(message: types.Message):
     else:
         await SetBio.finding.set()
         keyboard = ReplyKeyboardMarkup(
-            [[KeyboardButton("👨‍ Yigitlar"),
-              KeyboardButton("👩‍ Qizlar"),
+            [[KeyboardButton("👨‍ Yigit kishi"),
+              KeyboardButton("👩‍ Ayol kishi"),
               KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
@@ -96,12 +96,12 @@ async def process_set_bio(message: types.Message, state: FSMContext):
 async def process_set_finding(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["finding"] = message.text
-        if data['finding'] == "👨‍ Yigitlar":
+        if data['finding'] == "👨‍ Yigit kishi":
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"finding": "👨‍ Yigitlar"}})
-        elif data['finding'] == '👩‍ Qiz bola':
+                "$set": {"finding": "👨‍ Yigit kishi"}})
+        elif data['finding'] == '👩‍ Ayol kishi':
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"finding": "👩‍ Qiz bola"}
+                "$set": {"finding": "👩‍ Ayol kishi"}
             })
         else:
             collusers.update_one({"_id": message.from_user.id}, {
@@ -117,12 +117,12 @@ async def process_set_finding(message: types.Message, state: FSMContext):
 async def process_set_gender(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["gender"] = message.text
-        if data['gender'] == "👨‍ O'g'il bola":
+        if data['gender'] == "👨‍ Yigit kishi":
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"gender": "👨‍ O'g'il bola"}})
-        elif data['gender'] == '👩‍ Qizlar':
+                "$set": {"gender": "👨‍ Yigit kishi"}})
+        elif data['gender'] == '👩‍ Ayol kishi':
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"gender": "👩‍ Qizlar"}
+                "$set": {"gender": "👩‍ Ayol kishi"}
             })
         else:
             collusers.update_one({"_id": message.from_user.id}, {
@@ -146,8 +146,8 @@ async def account_user(message: types.Message):
                f"💵 Balans: {acc['balance']}\n" \
                f"Reyting: {acc['reputation']}\n" \
                f"📝Bio: {acc['bio']}\n" \
-               f"Jins: {acc['gender']}\n" \
-               f"Qidiruv: {acc.get('finding', 'Yoʻq')}"
+               f"Jins: {acc.get('gender', 'Noaniq')}\n" \
+               f"Qidiruv: {acc.get('finding', 'Noaniq')}"
         keyboard = ReplyKeyboardMarkup(
             [
                 [
@@ -222,14 +222,17 @@ async def search_user_act(message: types.Message):
             else:
                 if collqueue.count_documents({"_id": message.chat.id}) != 1:
                     keyboard = ReplyKeyboardMarkup(
-                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True, one_time_keyboard=True)
-                    interlocutor = collqueue.find_one({})
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    finder_acc = collusers.find_one({"_id": message.from_user.id})
+
+                    interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
+                                                       "_finding": finder_acc.get('gender')})
 
                     if interlocutor is None:
                         acc = collusers.find_one({"_id": message.from_user.id})
                         collqueue.insert_one({
                             "_id": message.chat.id,
-                            "_sex": acc.get('sex'),
+                            "_sex": acc.get('gender'),
                             "_finding": acc.get('finding')
                         })
                         await message.answer(
