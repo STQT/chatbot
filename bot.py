@@ -9,7 +9,9 @@ from pymongo import MongoClient
 import random
 
 BOT_TOKEN = "5042886538:AAGUs9OQ0Zd9_Nc33HpDX7IkePu3roh4BME"
+# BOT_TOKEN = "2020786505:AAF1lZXaBhPh-Nkj1TQJfMR4CQRjZV9IsKA"  # please shu turip tursin :)
 MONGO_URL = 'mongodb+srv://vodiylik:vodiylik@cluster0.b18ay.mongodb.net/davraBot?retryWrites=true&w=majority'
+# MONGO_URL = 'mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000'  # shu ham :)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -227,6 +229,32 @@ async def search_user_act(message: types.Message):
 
                     interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
                                                        "_finding": finder_acc.get('gender')})
+                    if interlocutor is None:
+                        user_gender = finder_acc.get('gender')
+
+                        user_find = finder_acc.get('finding')
+                        if user_find == "👤 Muhim emas":
+                            interlocutor = collqueue.find_one(
+                                {
+                                    "$or":
+                                    [
+                                        {"_sex": "👤 Muhim emas"},
+                                        {"_sex": "👩‍ Ayol kishi"},
+                                        {"_sex": "👨‍ Yigit kishi"}
+                                    ],
+                                    "_finding": finder_acc.get('gender')
+                                })
+                        elif user_gender == "👤 Muhim emas":
+                            interlocutor = collqueue.find_one(
+                                {
+                                    "_sex": finder_acc.get('finding'),
+                                    "$or":
+                                        [
+                                            {"_finding": "👤 Muhim emas"},
+                                            {"_finding": "👩‍ Ayol kishi"},
+                                            {"_finding": "👨‍ Yigit kishi"}
+                                        ],
+                                })
 
                     if interlocutor is None:
                         acc = collusers.find_one({"_id": message.from_user.id})
