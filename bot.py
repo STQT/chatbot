@@ -226,12 +226,10 @@ async def search_user_act(message: types.Message):
                     keyboard = ReplyKeyboardMarkup(
                         [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
                     finder_acc = collusers.find_one({"_id": message.from_user.id})
-
                     interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
                                                        "_finding": finder_acc.get('gender')})
                     if interlocutor is None:
                         user_gender = finder_acc.get('gender')
-
                         user_find = finder_acc.get('finding')
                         if user_find == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
@@ -255,7 +253,8 @@ async def search_user_act(message: types.Message):
                                             {"_finding": "👨‍ Yigit kishi"}
                                         ],
                                 })
-
+                        elif user_gender == "👤 Muhim emas" and user_find == "👤 Muhim emas":
+                            interlocutor = collqueue.find_one({})
                     if interlocutor is None:
                         acc = collusers.find_one({"_id": message.from_user.id})
                         collqueue.insert_one({
@@ -285,8 +284,12 @@ async def search_user_act(message: types.Message):
                             )
                             bio_intestlocutor = collusers.find_one(
                                 {"_id": message.chat.id})["bio"]
+                            gender_intestlocutor = collusers.find_one(
+                                {"_id": message.chat.id}).get("gender", "Noaniq")
                             bio_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["bio"]
+                            gender_user = collusers.find_one({"_id": collchats.find_one(
+                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("gender", "Noaniq")
                             keyboard_leave = ReplyKeyboardMarkup([[
                                 KeyboardButton(
                                     "💔 Suhbatni yakunlash")]],
@@ -297,12 +300,14 @@ async def search_user_act(message: types.Message):
                             await message.answer(
                                 "Suhbatdosh topildi!😉\n"
                                 "Suhbatni boshlashingiz mumkin.🥳"
-                                f"\nSuhbatdoshingiz biosi: {bio_user}",
+                                f"\nSuhbatdoshingiz biosi: {bio_user}\n"
+                                f"\nSuhbatdoshingiz jinsi: {gender_user}",
                                 reply_markup=keyboard_leave)
                             await bot.send_message(
                                 text="Suhbatdosh topildi!😉\n"
                                      "Suhbatni boshlashingiz mumkin.🥳\n"
-                                     f"Suhbatdosh biosi: {bio_intestlocutor}",
+                                     f"Suhbatdosh biosi: {bio_intestlocutor}\n"
+                                     f"Suhbatdosh jinsi: {gender_intestlocutor}",
                                 chat_id=chat_info,
                                 reply_markup=keyboard_leave)
                         else:
