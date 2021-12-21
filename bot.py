@@ -395,10 +395,11 @@ async def leave_from_chat_act(message: types.Message):
             await bot.send_message(text="Suhbatdosh bilan muloqot maroqli o'tdimi?",
                                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                                    reply_markup=keyboard)
+            await rep_menu(message)
         except Exception as e:
             await account_user(message)
             logging.error(f"Ushbu foydalanuvchida xato yuz berdi: {e}")
-        await rep_menu(message)
+
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
 
