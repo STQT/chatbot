@@ -242,7 +242,7 @@ async def search_user_act(message: types.Message):
                                         {"_sex": "👩‍ Ayol kishi"},
                                         {"_sex": "👨‍ Yigit kishi"}
                                     ],
-                                    "_finding": finder_acc.get('gender')
+                                    "_finding": [finder_acc.get('gender'), "👤 Muhim emas"]
                                 })
                         elif user_gender == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
