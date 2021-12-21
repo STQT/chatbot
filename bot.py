@@ -319,7 +319,9 @@ async def search_user_act(message: types.Message):
                                 "Yoki izlashni to'xtatishingiz mumkin", reply_markup=keyboard)
 
                 else:
-                    await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉")
+                    keyboard = ReplyKeyboardMarkup(
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉", reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["stop_search"])
@@ -368,6 +370,7 @@ async def rep_menu(message: types.Message):
             resize_keyboard=True
         )
         await message.answer("Suhbatdosh bilan muloqot maroqli o'tdimi?", reply_markup=keyboard)
+        # await account_user(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
 
