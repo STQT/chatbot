@@ -170,12 +170,12 @@ async def account_user(message: types.Message):
         await message.answer("Siz tizimda hali ro'yxatdan o'tmagansiz", reply_markup=keyboard)
     else:
         acc = collusers.find_one({"_id": message.from_user.id})
-        text = f"👤Foydalanuvchi tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
+        text = f"👤Tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
                f"💵 Balans: {acc['balance']}\n" \
-               f"Reyting: {acc['reputation']}\n" \
+               f"⭐️Reyting: {acc['reputation']}\n" \
                f"📝Bio: {acc['bio']}\n" \
-               f"Jins: {acc.get('gender', 'Noaniq')}\n" \
-               f"Qidiruv: {acc.get('finding', 'Noaniq')}"
+               f"👫Jins: {acc.get('gender', 'Noaniq')}\n" \
+               f"👫Qidiruv: {acc.get('finding', 'Noaniq')}"
         keyboard = ReplyKeyboardMarkup(
             [
                 [
