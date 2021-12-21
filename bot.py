@@ -231,7 +231,7 @@ async def search_user_act(message: types.Message):
                     interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
                                                        "_finding": finder_acc.get('gender')})
                     if interlocutor is None:
-                        user_gender = finder_acc.get('gender')
+                        user_gender_var = finder_acc.get('gender')
                         user_find = finder_acc.get('finding')
                         if user_find == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
@@ -244,7 +244,7 @@ async def search_user_act(message: types.Message):
                                     ],
                                     "_finding": [finder_acc.get('gender'), "👤 Muhim emas"]
                                 })
-                        elif user_gender == "👤 Muhim emas":
+                        elif user_gender_var == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
                                 {
                                     "_sex": finder_acc.get('finding'),
@@ -255,7 +255,7 @@ async def search_user_act(message: types.Message):
                                             {"_finding": "👨‍ Yigit kishi"}
                                         ],
                                 })
-                        elif user_gender == "👤 Muhim emas" and user_find == "👤 Muhim emas":
+                        elif user_gender_var == "👤 Muhim emas" and user_find == "👤 Muhim emas":
                             interlocutor = collqueue.find_one({})
                     if interlocutor is None:
                         acc = collusers.find_one({"_id": message.from_user.id})
@@ -390,12 +390,15 @@ async def leave_from_chat_act(message: types.Message):
         )
         try:
             await bot.send_message(text="Suhbatdoshingiz chatni tark etdi",
-                                   chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                                   chat_id=collchats.find_one(
+                                       {"user_chat_id": message.chat.id}).get("interlocutor_chat_id"),
                                    reply_markup=keyboard)
             await bot.send_message(text="Suhbatdosh bilan muloqot maroqli o'tdimi?",
-                                   chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                                   chat_id=collchats.find_one(
+                                       {"user_chat_id": message.chat.id}).get("interlocutor_chat_id"),
                                    reply_markup=keyboard)
             await rep_menu(message)
+            # TODO: NEED delete user from collchats. Ja unchalik muhim emas, lekin ortiqcha malumotlar qoladi
         except Exception as e:
             await account_user(message)
             logging.error(f"Ushbu foydalanuvchida xato yuz berdi: {e}")
