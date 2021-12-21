@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
@@ -8,10 +10,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
 import random
 
-BOT_TOKEN = "5042886538:AAGUs9OQ0Zd9_Nc33HpDX7IkePu3roh4BME"
-# BOT_TOKEN = "2020786505:AAF1lZXaBhPh-Nkj1TQJfMR4CQRjZV9IsKA"  # please shu turip tursin :)
-MONGO_URL = 'mongodb+srv://vodiylik:vodiylik@cluster0.b18ay.mongodb.net/davraBot?retryWrites=true&w=majority'
-# MONGO_URL = 'mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000'  # shu ham :)
+from config import BOT_TOKEN, MONGO_URL
+
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -388,12 +388,16 @@ async def leave_from_chat_act(message: types.Message):
             ],
             resize_keyboard=True
         )
-        await bot.send_message(text="Suhbatdoshingiz chatni tark etdi",
-                               chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                               reply_markup=keyboard)
-        await bot.send_message(text="Suhbatdosh bilan muloqot maroqli o'tdimi?",
-                               chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                               reply_markup=keyboard)
+        try:
+            await bot.send_message(text="Suhbatdoshingiz chatni tark etdi",
+                                   chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                                   reply_markup=keyboard)
+            await bot.send_message(text="Suhbatdosh bilan muloqot maroqli o'tdimi?",
+                                   chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                                   reply_markup=keyboard)
+        except Exception as e:
+            await account_user(message)
+            logging.error(f"Ushbu foydalanuvchida xato yuz berdi: {e}")
         await rep_menu(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
