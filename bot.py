@@ -27,6 +27,12 @@ class SetBio(StatesGroup):
     gender = State()
 
 
+class SetRegBio(StatesGroup):
+    finding = State()
+    user_bio = State()
+    gender = State()
+
+
 @dp.message_handler(commands="start")
 async def menu(message: types.Message):
     keyboard = ReplyKeyboardMarkup(
@@ -204,11 +210,79 @@ async def account_registration_act(message: types.Message):
                 "bio": "Tarmoqdagi foydalanuvchilardan biri"
             }
         )
-        hearts = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍"]
-        await message.answer(f"{random.choice(hearts)} Siz tizimda muvaffaqiyatli anketangizni yaratdingiz ☺️")
-        await account_user(message)
+        # hearts = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍"]
+        await SetRegBio.user_bio.set()
+        await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
+        # await message.answer(f"{random.choice(hearts)} Siz tizimda muvaffaqiyatli anketangizni yaratdingiz ☺️")
+        # await account_user(message)
     else:
         await message.answer("Siz tizimda allaqachon anketa yaratgansiz 😉")
+        await account_user(message)
+
+
+@dp.message_handler(state=SetRegBio.user_bio)
+async def process_set_bio_reg(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["user_bio"] = message.text
+        collusers.update_one({"_id": message.from_user.id}, {
+            "$set": {"bio": data["user_bio"]}})
+
+        await message.answer("Ma'lumotlar saqlandi")
+        # await state.finish()
+        await SetRegBio.gender.set()
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("👨‍ Yigit kishi"),
+              KeyboardButton("👩‍ Ayol kishi"),
+              KeyboardButton("👤 Muhim emas")
+              ]], resize_keyboard=True, one_time_keyboard=True)
+        await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
+
+
+@dp.message_handler(state=SetRegBio.gender)
+async def process_set_gender_reg(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["gender"] = message.text
+        if data['gender'] == "👨‍ Yigit kishi":
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👨‍ Yigit kishi"}})
+        elif data['gender'] == '👩‍ Ayol kishi':
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👩‍ Ayol kishi"}
+            })
+        else:
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"gender": "👤 Muhim emas"}
+            })
+
+        await message.answer("Ma'lumotlar saqlandi")
+        # await state.finish()
+        await SetRegBio.finding.set()
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("👨‍ Yigit kishi"),
+              KeyboardButton("👩‍ Ayol kishi"),
+              KeyboardButton("👤 Muhim emas")
+              ]], resize_keyboard=True, one_time_keyboard=True)
+        await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
+
+
+@dp.message_handler(state=SetRegBio.finding)
+async def process_set_finding_reg(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["finding"] = message.text
+        if data['finding'] == "👨‍ Yigit kishi":
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"finding": "👨‍ Yigit kishi"}})
+        elif data['finding'] == '👩‍ Ayol kishi':
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"finding": "👩‍ Ayol kishi"}
+            })
+        else:
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"finding": "👤 Muhim emas"}
+            })
+
+        await message.answer("Ma'lumotlar saqlandi")
+        # await state.finish()
         await account_user(message)
 
 
