@@ -12,7 +12,6 @@ import random
 
 from config import BOT_TOKEN, MONGO_URL
 
-
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
@@ -236,13 +235,17 @@ async def search_user_act(message: types.Message):
                         if user_find == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
                                 {
-                                    "$or":
-                                    [
-                                        {"_sex": "👤 Muhim emas"},
-                                        {"_sex": "👩‍ Ayol kishi"},
-                                        {"_sex": "👨‍ Yigit kishi"}
-                                    ],
-                                    "_finding": [finder_acc.get('gender'), "👤 Muhim emas"]
+                                    "_sex": {
+                                        "$in":
+                                            ["👤 Muhim emas",
+                                             "👩‍ Ayol kishi",
+                                             "👨‍ Yigit kishi"]
+                                    },
+                                    "_finding": {
+                                        "$in":
+                                            [finder_acc.get('gender'),
+                                             "👤 Muhim emas"]
+                                    }
                                 })
                         elif user_gender_var == "👤 Muhim emas":
                             interlocutor = collqueue.find_one(
