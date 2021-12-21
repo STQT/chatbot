@@ -25,6 +25,7 @@ class SetBio(StatesGroup):
     finding = State()
     user_bio = State()
     gender = State()
+    nickname = State()
 
 
 class SetRegBio(StatesGroup):
@@ -85,6 +86,26 @@ async def user_finding(message: types.Message):
               KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
+
+
+@dp.message_handler(commands=["tahallus", "set_nickname", "new_nickname", "about_nickname"])
+async def user_tahallus(message: types.Message):
+    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+        await account_user(message)
+    else:
+        await SetBio.nickname.set()
+        await message.answer("Iltimos, o'z tahallusingizni yozing")
+
+
+@dp.message_handler(state=SetBio.nickname)
+async def process_set_nickname(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["nickname"] = message.text
+        collusers.update_one({"_id": message.from_user.id}, {
+            "$set": {"nickname": data["nickname"]}})
+        await message.answer("Ma'lumotlar saqlandi")
+        await state.finish()
+    await menu(message)
 
 
 @dp.message_handler(state=SetBio.user_bio)
@@ -149,7 +170,7 @@ async def account_user(message: types.Message):
         await message.answer("Siz tizimda hali ro'yxatdan o'tmagansiz", reply_markup=keyboard)
     else:
         acc = collusers.find_one({"_id": message.from_user.id})
-        text = f"👤Foydalanuvchi ID: {message.from_user.id}\n" \
+        text = f"👤Foydalanuvchi tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
                f"💵 Balans: {acc['balance']}\n" \
                f"Reyting: {acc['reputation']}\n" \
                f"📝Bio: {acc['bio']}\n" \
@@ -167,6 +188,9 @@ async def account_user(message: types.Message):
                 [
                     KeyboardButton("✏ Jinsni o'zgartirish"),
                     KeyboardButton("✏ Kim bilan suxbatlashish?"),
+                ],
+                [
+                    KeyboardButton("✏ Tahallusni o'zgartirish"),
                 ],
                 [
                     KeyboardButton("🏠 Bosh menyu"),
@@ -205,6 +229,7 @@ async def account_registration_act(message: types.Message):
         collusers.insert_one(
             {
                 "_id": message.from_user.id,
+                "nickname": message.from_user.username,
                 "balance": 0,
                 "reputation": 0,
                 "bio": "Tarmoqdagi foydalanuvchilardan biri"
@@ -361,12 +386,16 @@ async def search_user_act(message: types.Message):
                                     "interlocutor_chat_id": message.chat.id
                                 }
                             )
+                            nickname_intestlocutor = collusers.find_one(
+                                {"_id": message.chat.id})["nickname"]
                             bio_intestlocutor = collusers.find_one(
                                 {"_id": message.chat.id})["bio"]
                             gender_intestlocutor = collusers.find_one(
                                 {"_id": message.chat.id}).get("gender", "Noaniq")
                             bio_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["bio"]
+                            nickname_user = collusers.find_one({"_id": collchats.find_one(
+                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["nickname"]
                             gender_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("gender", "Noaniq")
                             keyboard_leave = ReplyKeyboardMarkup([[
@@ -378,13 +407,15 @@ async def search_user_act(message: types.Message):
 
                             await message.answer(
                                 "Suhbatdosh topildi!😉\n"
-                                "Suhbatni boshlashingiz mumkin.🥳"
-                                f"\nSuhbatdoshingiz biosi: {bio_user}\n"
-                                f"\nSuhbatdoshingiz jinsi: {gender_user}",
+                                "Suhbatni boshlashingiz mumkin.🥳\n"
+                                f"\nSuhbatdoshingiz tahallusi: {nickname_user}\n"
+                                f"Suhbatdoshingiz biosi: {bio_user}\n"
+                                f"Suhbatdoshingiz jinsi: {gender_user}",
                                 reply_markup=keyboard_leave)
                             await bot.send_message(
                                 text="Suhbatdosh topildi!😉\n"
-                                     "Suhbatni boshlashingiz mumkin.🥳\n"
+                                     "Suhbatni boshlashingiz mumkin.🥳\n\n"
+                                     f"Suhbatdosh tahallusi: {nickname_intestlocutor}\n"
                                      f"Suhbatdosh biosi: {bio_intestlocutor}\n"
                                      f"Suhbatdosh jinsi: {gender_intestlocutor}",
                                 chat_id=chat_info,
@@ -503,6 +534,8 @@ async def some_text(message: types.Message):
         await user_gender(message)
     elif message.text == "✏ Kim bilan suxbatlashish?":
         await user_finding(message)
+    elif message.text == "✏ Tahallusni o'zgartirish":
+        await user_tahallus(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
     elif message.text == "💔 Suhbatni yakunlash":
