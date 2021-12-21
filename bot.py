@@ -334,6 +334,7 @@ async def stop_search_act(message: types.Message):
         await menu(message)
     else:
         await message.answer("Siz suhbatdosh izlamayapsiz")
+        await menu(message)
 
 
 @dp.message_handler(commands=["Ha"])
