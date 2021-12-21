@@ -221,7 +221,7 @@ async def search_user_act(message: types.Message):
         else:
             if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
                 keyboard = ReplyKeyboardMarkup(
-                    [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True)
                 await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
             else:
                 if collqueue.count_documents({"_id": message.chat.id}) != 1:
