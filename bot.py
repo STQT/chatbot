@@ -229,7 +229,7 @@ async def account_registration_act(message: types.Message):
         collusers.insert_one(
             {
                 "_id": message.from_user.id,
-                "nickname": message.from_user.username,
+                "nickname": message.from_user.first_name,
                 "balance": 0,
                 "reputation": 0,
                 "bio": "Tarmoqdagi foydalanuvchilardan biri"
@@ -395,7 +395,7 @@ async def search_user_act(message: types.Message):
                             bio_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["bio"]
                             nickname_user = collusers.find_one({"_id": collchats.find_one(
-                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["nickname"]
+                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("nickname", "Yo'q")
                             gender_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("gender", "Noaniq")
                             keyboard_leave = ReplyKeyboardMarkup([[
