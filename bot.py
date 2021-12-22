@@ -387,13 +387,13 @@ async def search_user_act(message: types.Message):
                                 }
                             )
                             nickname_intestlocutor = collusers.find_one(
-                                {"_id": message.chat.id})["nickname"]
+                                {"_id": message.chat.id}).get("nickname", "Yo'q")
                             bio_intestlocutor = collusers.find_one(
-                                {"_id": message.chat.id})["bio"]
+                                {"_id": message.chat.id}).get("bio", "Bio mavjud emas")
                             gender_intestlocutor = collusers.find_one(
                                 {"_id": message.chat.id}).get("gender", "Noaniq")
                             bio_user = collusers.find_one({"_id": collchats.find_one(
-                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]})["bio"]
+                                {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("bio", "Bio yo'q")
                             nickname_user = collusers.find_one({"_id": collchats.find_one(
                                 {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("nickname", "Yo'q")
                             gender_user = collusers.find_one({"_id": collchats.find_one(
