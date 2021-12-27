@@ -307,7 +307,7 @@ async def process_set_finding_reg(message: types.Message, state: FSMContext):
             })
 
         await message.answer("Ma'lumotlar saqlandi")
-        # await state.finish()
+        await state.finish()
         await account_user(message)
 
 
