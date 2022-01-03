@@ -38,7 +38,11 @@ class SetRegBio(StatesGroup):
 
 @dp.message_handler(commands="start")
 async def menu(message: types.Message):
-    if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]):
+    if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
+            collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
+        # 1. Check start ref ID
+        # 2. Check tg self user ID
+        # 3. Check is there ref user ID in DB
         collrefs.insert_one(
             {
                 "_id": message.from_user.id,
@@ -240,7 +244,7 @@ async def account_user(message: types.Message):
                     KeyboardButton("✏ Bio"),
                 ],
                 [
-                  KeyboardButton("🗣 Do'stlarga ulashish")
+                    KeyboardButton("🗣 Do'stlarga ulashish")
                 ],
                 [
                     KeyboardButton("🏠 Bosh menyu"),
