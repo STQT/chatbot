@@ -56,6 +56,32 @@ async def user_bio(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         await account_user(message)
     else:
+        keyboard = ReplyKeyboardMarkup(
+            [
+                [
+                    KeyboardButton("✏ Haqimda"),
+                    KeyboardButton("✏ Jins")
+                ],
+                [
+                    KeyboardButton("✏ Kim bilan suxbatlashish?"),
+                ],
+                [
+                    KeyboardButton("✏ Tahallusni o'zgartirish"),
+                ],
+                [
+                    KeyboardButton("🔖 Anketa"),
+                ]
+            ],
+            resize_keyboard=True
+        )
+        await message.answer("Qaysi bo'limni o'zgartirishni istaysiz?", reply_markup=keyboard)
+
+
+@dp.message_handler(commands=["haqimda", "me_bio"])
+async def user_bio_change(message: types.Message):
+    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+        await account_user(message)
+    else:
         await SetBio.user_bio.set()
         await message.answer("Iltimos, qisqacha o'zingiz haqingizda yozing")
 
@@ -184,13 +210,6 @@ async def account_user(message: types.Message):
                 [
                     KeyboardButton("💣 Anketani o'chirish"),
                     KeyboardButton("✏ Bio"),
-                ],
-                [
-                    KeyboardButton("✏ Jinsni o'zgartirish"),
-                    KeyboardButton("✏ Kim bilan suxbatlashish?"),
-                ],
-                [
-                    KeyboardButton("✏ Tahallusni o'zgartirish"),
                 ],
                 [
                     KeyboardButton("🏠 Bosh menyu"),
@@ -538,6 +557,8 @@ async def some_text(message: types.Message):
         await user_tahallus(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
+    elif message.text == "✏ Biografiya o'zgartirish":
+        await user_bio_change(message)
     elif message.text == "💔 Suhbatni yakunlash":
         await leave_from_chat_act(message)
     elif message.text == "👍 Ha":
