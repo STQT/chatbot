@@ -7,5 +7,5 @@ Tokens
  * Get telegram bot token
   * Get Mongodb connect
   
-And insert into bot.py 
+And insert into config.py 
 
