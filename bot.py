@@ -19,6 +19,7 @@ cluster = MongoClient(MONGO_URL)
 collqueue = cluster.chatbot.queue
 collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
+collrefs = cluster.chatbot.refs
 
 
 class SetBio(StatesGroup):
@@ -32,10 +33,25 @@ class SetRegBio(StatesGroup):
     finding = State()
     user_bio = State()
     gender = State()
+    referal = State()
 
 
 @dp.message_handler(commands="start")
 async def menu(message: types.Message):
+    if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
+            collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
+        # 1. Check start ref ID
+        # 2. Check tg self user ID
+        # 3. Check is there ref user ID in DB
+        collrefs.insert_one(
+            {
+                "_id": message.from_user.id,
+                "_ref": int(message.text.split()[1])
+            }
+        )
+        collusers.update_one({"_id": int(message.text.split()[1])}, {
+            "$inc": {"balance": 1}})
+
     keyboard = ReplyKeyboardMarkup(
         [
             [
@@ -189,6 +205,22 @@ async def process_set_gender(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(commands=["account"])
+async def referal_link(message: types.Message):
+    text = "Do'stlaringizga ulashing va balansingizni to'ldiring\n" \
+           "Sizning havolangiz: \n\n" \
+           f"t.me/davra_bot/?start={message.from_user.id}"
+    # keyboard = InlineKeyboardMarkup(
+    #     inline_keyboard=[
+    #         [
+    #             InlineKeyboardButton("✅ Ulashish", switch_inline_query='TEXT podelivshiysa'),
+    #         ]
+    #     ],
+    #     one_time_keyboard=True
+    # )
+    await message.answer(text)
+
+
+@dp.message_handler(commands=["account"])
 async def account_user(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         keyboard = ReplyKeyboardMarkup(
@@ -210,6 +242,9 @@ async def account_user(message: types.Message):
                 [
                     KeyboardButton("💣 Anketani o'chirish"),
                     KeyboardButton("✏ Bio"),
+                ],
+                [
+                    KeyboardButton("🗣 Do'stlarga ulashish")
                 ],
                 [
                     KeyboardButton("🏠 Bosh menyu"),
@@ -251,7 +286,8 @@ async def account_registration_act(message: types.Message):
                 "nickname": message.from_user.first_name,
                 "balance": 0,
                 "reputation": 0,
-                "bio": "Tarmoqdagi foydalanuvchilardan biri"
+                "bio": "Tarmoqdagi foydalanuvchilardan biri",
+                # "referal": 1234
             }
         )
         # hearts = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍"]
@@ -541,6 +577,8 @@ async def some_text(message: types.Message):
         await account_registration_act(message)
     elif message.text == "🔖 Anketa":
         await account_user(message)
+    elif message.text == "🗣 Do'stlarga ulashish":
+        await referal_link(message)
     elif message.text == "🏠 Bosh menyu":
         await menu(message)
     elif message.text == "💣 Anketani o'chirish":
