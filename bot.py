@@ -208,7 +208,7 @@ async def process_set_gender(message: types.Message, state: FSMContext):
 async def referal_link(message: types.Message):
     text = "Do'stlaringizga ulashing va balansingizni to'ldiring\n" \
            "Sizning havolangiz: \n\n" \
-           f"t.me/iptrobot/?start={message.from_user.id}"
+           f"t.me/davra_bot/?start={message.from_user.id}"
     # keyboard = InlineKeyboardMarkup(
     #     inline_keyboard=[
     #         [
