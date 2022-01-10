@@ -507,6 +507,7 @@ async def yes_rep_act(message: types.Message):
         await menu(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
+        await menu(message)
 
 
 @dp.message_handler(commands=["Yo'q"])
@@ -519,6 +520,7 @@ async def no_rep_act(message: types.Message):
         await menu(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
+        await menu(message)
 
 
 @dp.message_handler(commands=["rep_menu"])
@@ -537,6 +539,7 @@ async def rep_menu(message: types.Message):
         # await account_user(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
+        await menu(message)
 
 
 @dp.message_handler(commands=["yakunlash", "leave", "leave_chat"])
@@ -569,6 +572,7 @@ async def leave_from_chat_act(message: types.Message):
 
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
+        await menu(message)
 
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document"])
