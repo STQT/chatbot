@@ -542,6 +542,18 @@ async def rep_menu(message: types.Message):
         await menu(message)
 
 
+@dp.message_handler(commands=['stat'])
+async def leave_from_chat_act(message: types.Message):
+    users = cluster.chatbot.command('collstats', 'users')
+    queue_stats = cluster.chatbot.command('collstats', 'queue')
+    chats = cluster.chatbot.command('collstats', 'chats')
+    msg = "Statistika:\n" \
+          f"Users: {users.get('count', '0')}\n" \
+          f"Chats: {chats.get('count', '0')}\n" \
+          f"Queue's: {queue_stats.get('count', '0')}"
+    await message.answer(msg)
+
+
 @dp.message_handler(commands=["yakunlash", "leave", "leave_chat"])
 async def leave_from_chat_act(message: types.Message):
     if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
