@@ -533,10 +533,10 @@ async def rep_menu(message: types.Message):
                     KeyboardButton("👎 Yo'q")
                 ]
             ],
-            resize_keyboard=True
+            resize_keyboard=True, one_time_keyboard=True
         )
         await message.answer("Suhbatdosh bilan muloqot maroqli o'tdimi?", reply_markup=keyboard)
-        # await account_user(message)
+        await account_user(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
         await menu(message)
