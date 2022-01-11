@@ -497,7 +497,7 @@ async def stop_search_act(message: types.Message):
         await menu(message)
 
 
-@dp.message_handler(commands=["Ha"])
+@dp.message_handler(commands=["ha"])
 async def yes_rep_act(message: types.Message):
     if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
         collusers.update_one({"_id": message.from_user.id}, {
@@ -510,7 +510,7 @@ async def yes_rep_act(message: types.Message):
         await menu(message)
 
 
-@dp.message_handler(commands=["Yo'q"])
+@dp.message_handler(commands=["yoq"])
 async def no_rep_act(message: types.Message):
     if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
         collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
@@ -591,7 +591,7 @@ async def some_text(message: types.Message):
         await search_user_act(message)
     elif message.text == "📛 Izlashni to'xtatish":
         await stop_search_act(message)
-    elif message.text == "✏ Jinsni o'zgartirish":
+    elif message.text == "✏ Jins":
         await user_gender(message)
     elif message.text == "✏ Kim bilan suxbatlashish?":
         await user_finding(message)
@@ -599,7 +599,7 @@ async def some_text(message: types.Message):
         await user_tahallus(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
-    elif message.text == "✏ Biografiya o'zgartirish":
+    elif message.text == "✏ Haqimda":
         await user_bio_change(message)
     elif message.text == "💔 Suhbatni yakunlash":
         await leave_from_chat_act(message)
