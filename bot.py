@@ -8,7 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
-import random
+import admin_commands
 
 from config import BOT_TOKEN, MONGO_URL
 
@@ -552,6 +552,18 @@ async def leave_from_chat_act(message: types.Message):
           f"Chats: {chats.get('count', '0')}\n" \
           f"Queue's: {queue_stats.get('count', '0')}"
     await message.answer(msg)
+
+
+@dp.message_handler(commands=['all_stats'])
+async def leave_from_chat_act(message: types.Message):
+    user_stats = await admin_commands.user_statistics()
+    chat_list = await admin_commands.chat_statistics()
+    queue_list = await admin_commands.queue_statistics()
+    msg = "Barcha statistika:\n\n" \
+          f"     *Users*   \n{user_stats}\n\n" \
+          f"     *Chats* \n{len(chat_list)}\n\n" \
+          f"     *Queue's*  \n{len(queue_list)}"
+    await message.answer(msg, parse_mode="MarkdownV2")
 
 
 @dp.message_handler(commands=["yakunlash", "leave", "leave_chat"])
