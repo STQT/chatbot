@@ -36,6 +36,10 @@ class SetRegBio(StatesGroup):
     referal = State()
 
 
+class SetPost(StatesGroup):
+    post = State()
+
+
 @dp.message_handler(commands="main_menu")
 async def menu(message: types.Message):
     keyboard = ReplyKeyboardMarkup(
@@ -302,6 +306,68 @@ async def account_registration_act(message: types.Message):
     else:
         await message.answer("Siz tizimda allaqachon anketa yaratgansiz 😉")
         await account_user(message)
+
+
+@dp.message_handler(commands=["post", "posting"])
+async def send_post_act(message: types.Message):
+    await SetPost.post.set()
+    await message.answer("Iltimos menga kerakli xabarni yozing")
+
+
+@dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document"])
+async def process_send_post(message: types.Message, state: FSMContext):
+    if message.text == "Yuborish":
+        data = await state.get_data()
+        users = await admin_commands.get_all_active_users()
+        await admin_commands.send_post_all_users(data, users)
+        await state.finish()
+        await menu(message)
+    elif message.text == "Bekor qilish":
+        await state.finish()
+        await menu(message)
+    else:
+        async with state.proxy() as data:
+            if message.voice:
+                data['type'] = 'voice'
+                data['voice'] = message.voice.file_id
+                data['caption'] = message.caption
+                data['caption_entities'] = message.caption_entities
+                await bot.send_voice(chat_id=message.from_user.id, voice=message.voice.file_id,
+                                     caption=message.caption, caption_entities=message.caption_entities)
+            elif message.video:
+                data['type'] = 'video'
+                data['video'] = message.video
+                data['caption'] = message.caption
+                data['caption_entities'] = message.caption_entities
+                await bot.send_video(chat_id=message.from_user.id, video=message.video,
+                                     caption=message.caption)
+            elif message.photo:
+                data['type'] = 'photo'
+                data['photo'] = message.photo
+                data['caption'] = message.caption
+                data['caption_entities'] = message.caption_entities
+                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo, caption=message.caption)
+            elif message.sticker:
+                data['type'] = 'sticker'
+                data['sticker'] = message.sticker.file_id
+                await bot.send_sticker(chat_id=message.from_user.id, sticker=message.sticker.file_id)
+            elif message.text:
+                data['type'] = 'text'
+                data['text'] = message.text
+                data['entities'] = message.entities
+                await bot.send_message(chat_id=message.from_user.id, text=message.text)
+            elif message.document:
+                data['type'] = 'document'
+                data['document'] = message.document.file_id
+                data['caption'] = message.caption
+                data['caption_entities'] = message.caption_entities
+                await bot.send_document(chat_id=message.from_user.id, document=message.document.file_id)
+            # await state.finish()
+            keyboard = ReplyKeyboardMarkup(
+                [[KeyboardButton("Yuborish"),
+                  KeyboardButton("Bekor qilish"),
+                  ]], resize_keyboard=True, one_time_keyboard=True)
+            await message.answer("Yuboraylikmi?", reply_markup=keyboard)
 
 
 @dp.message_handler(state=SetRegBio.user_bio)
