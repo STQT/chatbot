@@ -11,6 +11,7 @@ logging.basicConfig(
     level=logging.WARNING
 )
 
+admin_ids = 256665985, 390736292
 
 # BOT_TOKEN = "2020786505:AAEf_Hqo_sXIF5xET-SCWTvse1tWjvfTSr0"  # please shu turip tursin :)
 # MONGO_URL = 'mongodb+srv://gproduct:qwerty2021@cluster0.sjsk4.mongodb.net/chatbot?retryWrites=true&w=majority'

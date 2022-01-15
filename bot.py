@@ -9,6 +9,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
 import admin_commands
+import config
 
 from config import BOT_TOKEN, MONGO_URL
 
@@ -310,8 +311,11 @@ async def account_registration_act(message: types.Message):
 
 @dp.message_handler(commands=["post", "posting"])
 async def send_post_act(message: types.Message):
-    await SetPost.post.set()
-    await message.answer("Iltimos menga kerakli xabarni yozing")
+    if message.from_user.id in config.admin_ids:
+        await SetPost.post.set()
+        await message.answer("Iltimos menga kerakli xabarni yozing")
+    else:
+        await message.answer("Bunday buyruq botda mavjud emas!")
 
 
 @dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document"])
