@@ -537,7 +537,6 @@ async def no_rep_act(message: types.Message):
             resize_keyboard=True
         )
         await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
-        await search_user_act(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
         await menu(message)
