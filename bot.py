@@ -36,8 +36,24 @@ class SetRegBio(StatesGroup):
     referal = State()
 
 
-@dp.message_handler(commands="start")
+@dp.message_handler(commands="main_menu")
 async def menu(message: types.Message):
+    keyboard = ReplyKeyboardMarkup(
+        [
+            [
+                KeyboardButton("☕️ Suhbatdosh izlash")
+            ],
+            [
+                KeyboardButton("🔖 Anketa")
+            ]
+        ],
+        resize_keyboard=True
+    )
+    await bot.send_message(chat_id=message.chat.id, text="🏠 Bosh menyu", reply_markup=keyboard)
+
+
+@dp.message_handler(commands="start")
+async def start_menu(message: types.Message):
     if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
             collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
         # 1. Check start ref ID
@@ -209,14 +225,6 @@ async def referal_link(message: types.Message):
     text = "Do'stlaringizga ulashing va balansingizni to'ldiring\n" \
            "Sizning havolangiz: \n\n" \
            f"t.me/davra_bot/?start={message.from_user.id}"
-    # keyboard = InlineKeyboardMarkup(
-    #     inline_keyboard=[
-    #         [
-    #             InlineKeyboardButton("✅ Ulashish", switch_inline_query='TEXT podelivshiysa'),
-    #         ]
-    #     ],
-    #     one_time_keyboard=True
-    # )
     await message.answer(text)
 
 
@@ -287,14 +295,10 @@ async def account_registration_act(message: types.Message):
                 "balance": 0,
                 "reputation": 0,
                 "bio": "Tarmoqdagi foydalanuvchilardan biri",
-                # "referal": 1234
             }
         )
-        # hearts = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍"]
         await SetRegBio.user_bio.set()
         await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
-        # await message.answer(f"{random.choice(hearts)} Siz tizimda muvaffaqiyatli anketangizni yaratdingiz ☺️")
-        # await account_user(message)
     else:
         await message.answer("Siz tizimda allaqachon anketa yaratgansiz 😉")
         await account_user(message)
@@ -500,11 +504,18 @@ async def stop_search_act(message: types.Message):
 @dp.message_handler(commands=["ha"])
 async def yes_rep_act(message: types.Message):
     if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
-        collusers.update_one({"_id": message.from_user.id}, {
-            "$inc": {"reputation": 5}})
+        collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
+            "interlocutor_chat_id"]}, {"$inc": {"reputation": 5}})
         collchats.delete_one({"user_chat_id": message.chat.id})
-        await message.answer("Javobingiz uchun rahmat!☺️")
-        await menu(message)
+        collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
+        keyboard = ReplyKeyboardMarkup(
+            [
+                [KeyboardButton("☕️ Suhbatdosh izlash")],
+                [KeyboardButton("🔖 Anketa")]
+            ],
+            resize_keyboard=True
+        )
+        await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
         await menu(message)
@@ -516,34 +527,24 @@ async def no_rep_act(message: types.Message):
         collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
             "interlocutor_chat_id"]}, {"$inc": {"reputation": -5}})
         collchats.delete_one({"user_chat_id": message.chat.id})
+        collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
         await message.answer("Javobingiz uchun rahmat!☺️")
-        await menu(message)
-    else:
-        await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
-        await menu(message)
-
-
-@dp.message_handler(commands=["rep_menu"])
-async def rep_menu(message: types.Message):
-    if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
         keyboard = ReplyKeyboardMarkup(
             [
-                [
-                    KeyboardButton("👍 Ha"),
-                    KeyboardButton("👎 Yo'q")
-                ]
+                [KeyboardButton("☕️ Suhbatdosh izlash")],
+                [KeyboardButton("🔖 Anketa")]
             ],
-            resize_keyboard=True, one_time_keyboard=True
+            resize_keyboard=True
         )
-        await message.answer("Suhbatdosh bilan muloqot maroqli o'tdimi?", reply_markup=keyboard)
-        await account_user(message)
+        await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
+        await search_user_act(message)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
         await menu(message)
 
 
 @dp.message_handler(commands=['stat'])
-async def leave_from_chat_act(message: types.Message):
+async def mini_stats_info(message: types.Message):
     users = cluster.chatbot.command('collstats', 'users')
     queue_stats = cluster.chatbot.command('collstats', 'queue')
     chats = cluster.chatbot.command('collstats', 'chats')
@@ -555,7 +556,7 @@ async def leave_from_chat_act(message: types.Message):
 
 
 @dp.message_handler(commands=['all_stats'])
-async def leave_from_chat_act(message: types.Message):
+async def all_stats_info(message: types.Message):
     user_stats = await admin_commands.user_statistics()
     chat_list = await admin_commands.chat_statistics()
     queue_list = await admin_commands.queue_statistics()
@@ -586,11 +587,10 @@ async def leave_from_chat_act(message: types.Message):
                                    reply_markup=keyboard)
             await bot.send_message(text="Suhbatdosh bilan muloqot maroqli o'tdimi?",
                                    chat_id=collchats.find_one(
-                                       {"user_chat_id": message.chat.id}).get("interlocutor_chat_id"),
+                                       {"user_chat_id": message.chat.id}).get("user_chat_id"),
                                    reply_markup=keyboard)
-            await rep_menu(message)
-            # TODO: NEED delete user from collchats. Ja unchalik muhim emas, lekin ortiqcha malumotlar qoladi
         except Exception as e:
+            collchats.delete_one({"user_chat_id": message.chat.id})
             await account_user(message)
             logging.error(f"Ushbu foydalanuvchida xato yuz berdi: {e}")
 
@@ -631,41 +631,39 @@ async def some_text(message: types.Message):
         await yes_rep_act(message)
     elif message.text == "👎 Yo'q":
         await no_rep_act(message)
-    elif message.content_type == "sticker":
-        try:
-            await bot.send_sticker(
-                chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                sticker=message.sticker["file_id"])
-        except TypeError:
-            pass
-    elif message.content_type == "photo":
-        try:
-            await bot.send_photo(
-                chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                photo=message.photo[len(message.photo) - 1].file_id)
-        except TypeError:
-            pass
-    elif message.content_type == "voice":
-        try:
-            await bot.send_voice(
-                chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                voice=message.voice["file_id"])
-        except TypeError:
-            pass
-    elif message.content_type == "document":
-        try:
-            await bot.send_document(
-                chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                document=message.document["file_id"])
-        except TypeError:
-            pass
+    elif collchats.find_one({"user_chat_id": message.chat.id}).get("status", True):
+        if message.content_type == "sticker":
+            try:
+                await bot.send_sticker(
+                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                    sticker=message.sticker["file_id"])
+            except TypeError:
+                pass
+        elif message.content_type == "photo":
+            try:
+                await bot.send_photo(
+                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                    photo=message.photo[len(message.photo) - 1].file_id)
+            except TypeError:
+                pass
+        elif message.content_type == "voice":
+            try:
+                await bot.send_voice(
+                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                    voice=message.voice["file_id"])
+            except TypeError:
+                pass
+        elif message.content_type == "document":
+            try:
+                await bot.send_document(
+                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                    document=message.document["file_id"])
+            except TypeError:
+                pass
     else:
-        try:
-            await bot.send_message(
-                text=message.text,
-                chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"])
-        except TypeError:
-            pass
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")]], resize_keyboard=True)
+        await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text_contains="remove")
