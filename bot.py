@@ -347,10 +347,10 @@ async def process_send_post(message: types.Message, state: FSMContext):
                                      caption=message.caption)
             elif message.photo:
                 data['type'] = 'photo'
-                data['photo'] = message.photo
+                data['photo'] = message.photo[-1].file_id
                 data['caption'] = message.caption
                 data['caption_entities'] = message.caption_entities
-                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo, caption=message.caption)
+                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo[-1].file_id, caption=message.caption)
             elif message.sticker:
                 data['type'] = 'sticker'
                 data['sticker'] = message.sticker.file_id
