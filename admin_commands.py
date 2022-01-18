@@ -56,6 +56,24 @@ async def get_all_active_users():
     return tg_users_id
 
 
+async def get_all_inactive_users():
+    user_list = []
+    chats_inactive = collchats.find()
+    if chats_inactive:
+        for user in chats_inactive:
+            user_list.append(user.get("user_chat_id", 0))
+    queue_inactive = collqueue.find()
+    if queue_inactive:
+        for user in queue_inactive:
+            user_list.append(user.get("_id", 0))
+    users_id = collusers.find({"_id": {"$nin": list(set(user_list))}})
+    tg_users_id = []
+    for i in users_id:
+        if i.get("status", True):
+            tg_users_id.append(i.get("_id", 0))
+    return tg_users_id
+
+
 async def send_post_all_users(data, users):
     if data['type'] == 'voice':
         for i in users:

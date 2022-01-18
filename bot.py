@@ -39,6 +39,7 @@ class SetRegBio(StatesGroup):
 
 class SetPost(StatesGroup):
     post = State()
+    inactive_post = State()
 
 
 @dp.message_handler(commands="main_menu")
@@ -225,7 +226,7 @@ async def process_set_gender(message: types.Message, state: FSMContext):
         await account_user(message)
 
 
-@dp.message_handler(commands=["account"])
+@dp.message_handler(commands=["ref_link"])
 async def referal_link(message: types.Message):
     text = "Do'stlaringizga ulashing va balansingizni to'ldiring\n" \
            "Sizning havolangiz: \n\n" \
@@ -320,13 +321,19 @@ async def send_post_act(message: types.Message):
 
 @dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document"])
 async def process_send_post(message: types.Message, state: FSMContext):
-    if message.text == "Yuborish":
+    if message.text == "☑️Yuborish":
         data = await state.get_data()
         users = await admin_commands.get_all_active_users()
         await admin_commands.send_post_all_users(data, users)
         await state.finish()
         await menu(message)
-    elif message.text == "Bekor qilish":
+    elif message.text == "✖️Bekor qilish":
+        await state.finish()
+        await menu(message)
+    elif message.text == "☑️Faol emaslarga":
+        data = await state.get_data()
+        users = await admin_commands.get_all_inactive_users()
+        await admin_commands.send_post_all_users(data, users)
         await state.finish()
         await menu(message)
     else:
@@ -350,7 +357,8 @@ async def process_send_post(message: types.Message, state: FSMContext):
                 data['photo'] = message.photo[-1].file_id
                 data['caption'] = message.caption
                 data['caption_entities'] = message.caption_entities
-                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo[-1].file_id, caption=message.caption)
+                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo[-1].file_id,
+                                     caption=message.caption)
             elif message.sticker:
                 data['type'] = 'sticker'
                 data['sticker'] = message.sticker.file_id
@@ -368,8 +376,8 @@ async def process_send_post(message: types.Message, state: FSMContext):
                 await bot.send_document(chat_id=message.from_user.id, document=message.document.file_id)
             # await state.finish()
             keyboard = ReplyKeyboardMarkup(
-                [[KeyboardButton("Yuborish"),
-                  KeyboardButton("Bekor qilish"),
+                [[KeyboardButton("☑️Yuborish"), KeyboardButton("☑️Faol emaslarga"),
+                  KeyboardButton("✖️Bekor qilish"),
                   ]], resize_keyboard=True, one_time_keyboard=True)
             await message.answer("Yuboraylikmi?", reply_markup=keyboard)
 
