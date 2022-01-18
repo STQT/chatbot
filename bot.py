@@ -628,11 +628,11 @@ async def mini_stats_info(message: types.Message):
 async def all_stats_info(message: types.Message):
     user_stats = await admin_commands.user_statistics()
     chat_list = await admin_commands.chat_statistics()
-    queue_list = await admin_commands.queue_statistics()
+    queue_stats = await admin_commands.queue_statistics()
     msg = "Barcha statistika:\n\n" \
           f"     *Users*   \n{user_stats}\n\n" \
           f"     *Chats* \n{len(chat_list)}\n\n" \
-          f"     *Queue's*  \n{len(queue_list)}"
+          f"     *Queue's*  \n{queue_stats}"
     await message.answer(msg, parse_mode="MarkdownV2")
 
 
