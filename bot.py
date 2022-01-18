@@ -670,6 +670,7 @@ async def leave_from_chat_act(message: types.Message):
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document"])
 async def some_text(message: types.Message):
+    chat = collchats.find_one({"user_chat_id": message.chat.id})
     if message.text == "📝 Ro'yxatdan o'tish":
         await account_registration_act(message)
     elif message.text == "🔖 Anketa":
@@ -700,39 +701,47 @@ async def some_text(message: types.Message):
         await yes_rep_act(message)
     elif message.text == "👎 Yo'q":
         await no_rep_act(message)
-    elif collchats.find_one({"user_chat_id": message.chat.id}).get("status", True):
-        if message.content_type == "sticker":
+    elif chat:
+        if message.content_type == "text":
             try:
-                await bot.send_sticker(
+                await bot.send_message(
                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                    sticker=message.sticker["file_id"])
+                    text=message.text, entities=message.entities)
             except TypeError:
                 pass
-        elif message.content_type == "photo":
-            try:
-                await bot.send_photo(
-                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                    photo=message.photo[len(message.photo) - 1].file_id)
-            except TypeError:
-                pass
-        elif message.content_type == "voice":
-            try:
-                await bot.send_voice(
-                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                    voice=message.voice["file_id"])
-            except TypeError:
-                pass
-        elif message.content_type == "document":
-            try:
-                await bot.send_document(
-                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                    document=message.document["file_id"])
-            except TypeError:
-                pass
-    else:
-        keyboard = ReplyKeyboardMarkup(
-            [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")]], resize_keyboard=True)
-        await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
+        elif chat.get("status", True):
+            if message.content_type == "sticker":
+                try:
+                    await bot.send_sticker(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        sticker=message.sticker["file_id"])
+                except TypeError:
+                    pass
+            elif message.content_type == "photo":
+                try:
+                    await bot.send_photo(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        photo=message.photo[len(message.photo) - 1].file_id)
+                except TypeError:
+                    pass
+            elif message.content_type == "voice":
+                try:
+                    await bot.send_voice(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        voice=message.voice["file_id"])
+                except TypeError:
+                    pass
+            elif message.content_type == "document":
+                try:
+                    await bot.send_document(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        document=message.document["file_id"])
+                except TypeError:
+                    pass
+        else:
+            keyboard = ReplyKeyboardMarkup(
+                [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")]], resize_keyboard=True)
+            await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text_contains="remove")
