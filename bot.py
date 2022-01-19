@@ -133,7 +133,6 @@ async def user_gender(message: types.Message):
         keyboard = ReplyKeyboardMarkup(
             [[KeyboardButton("👨‍ Yigit kishi"),
               KeyboardButton("👩‍ Ayol kishi"),
-              KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
 
@@ -217,9 +216,13 @@ async def process_set_gender(message: types.Message, state: FSMContext):
                 "$set": {"gender": "👩‍ Ayol kishi"}
             })
         else:
-            collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"gender": "👤 Muhim emas"}
-            })
+            await SetBio.gender.set()
+            keyboard = ReplyKeyboardMarkup(
+                [[KeyboardButton("👨‍ Yigit kishi"),
+                  KeyboardButton("👩‍ Ayol kishi"),
+                  ]], resize_keyboard=True, one_time_keyboard=True)
+            await message.answer("Noto'g'ri kiritdingiz", reply_markup=keyboard)
+            return True
 
         await message.answer("Ma'lumotlar saqlandi")
         await state.finish()
@@ -395,7 +398,6 @@ async def process_set_bio_reg(message: types.Message, state: FSMContext):
         keyboard = ReplyKeyboardMarkup(
             [[KeyboardButton("👨‍ Yigit kishi"),
               KeyboardButton("👩‍ Ayol kishi"),
-              KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
 
@@ -412,9 +414,13 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
                 "$set": {"gender": "👩‍ Ayol kishi"}
             })
         else:
-            collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"gender": "👤 Muhim emas"}
-            })
+            await SetRegBio.gender.set()
+            keyboard = ReplyKeyboardMarkup(
+                [[KeyboardButton("👨‍ Yigit kishi"),
+                  KeyboardButton("👩‍ Ayol kishi"),
+                  ]], resize_keyboard=True, one_time_keyboard=True)
+            await message.answer("Noto'g'ri kiritdingiz", reply_markup=keyboard)
+            return True
 
         await message.answer("Ma'lumotlar saqlandi")
         # await state.finish()
@@ -473,8 +479,7 @@ async def search_user_act(message: types.Message):
                                 {
                                     "_sex": {
                                         "$in":
-                                            ["👤 Muhim emas",
-                                             "👩‍ Ayol kishi",
+                                            ["👩‍ Ayol kishi",
                                              "👨‍ Yigit kishi"]
                                     },
                                     "_finding": {
@@ -484,6 +489,7 @@ async def search_user_act(message: types.Message):
                                     }
                                 })
                         elif user_gender_var == "👤 Muhim emas":
+                            # TODO: clear after change
                             interlocutor = collqueue.find_one(
                                 {
                                     "_sex": finder_acc.get('finding'),
