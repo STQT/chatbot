@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated
 
 from bot import collusers, collqueue, collchats, bot
@@ -126,7 +127,12 @@ async def send_post_all_users(data, users):
 
 
 def user_are_blocked_bot(message):
-    await message.answer("Ushbu foydalanuvchi botni tark etdi :( Boshqa suhbatdoshni qidiring!")
+    keyboard = ReplyKeyboardMarkup(
+        [
+            [KeyboardButton("☕️ Suhbatdosh izlash")],
+            [KeyboardButton("🔖 Anketa")]
+        ], resize_keyboard=True)
+    await message.answer("Ushbu foydalanuvchi botni tark etdi :( Boshqa suhbatdoshni qidiring!", reply_markup=keyboard)
     collchats.delete_one({"user_chat_id": message.chat.id})
     collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
     collusers.update_one(
