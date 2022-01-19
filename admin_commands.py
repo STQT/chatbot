@@ -19,7 +19,7 @@ async def user_statistics():
         else:
             another_list.append(i)
     blocked = collusers.count_documents({"status": False})
-    text = f'👩: {len(ladys_list)}\n👨: {len(mans_list)}\n👤: {len(another_list)}\nBlocked: {blocked}'
+    text = f'👩: {len(ladys_list)}\n👨: {len(mans_list)}\nJinsni kiritmaganlar: {len(another_list)}\nBlocked: {blocked}'
     return text
 
 
