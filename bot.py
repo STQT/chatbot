@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
+from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -721,37 +722,37 @@ async def some_text(message: types.Message):
                 await bot.send_message(
                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                     text=message.text, entities=message.entities)
-            except TypeError:
-                pass
+            except (BotKicked, BotBlocked, UserDeactivated):
+                admin_commands.user_are_blocked_bot(message)
         elif chat.get("status", True):
             if message.content_type == "sticker":
                 try:
                     await bot.send_sticker(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         sticker=message.sticker["file_id"])
-                except TypeError:
-                    pass
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "photo":
                 try:
                     await bot.send_photo(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         photo=message.photo[len(message.photo) - 1].file_id)
-                except TypeError:
-                    pass
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "voice":
                 try:
                     await bot.send_voice(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         voice=message.voice["file_id"])
-                except TypeError:
-                    pass
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "document":
                 try:
                     await bot.send_document(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         document=message.document["file_id"])
-                except TypeError:
-                    pass
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    admin_commands.user_are_blocked_bot(message)
         else:
             keyboard = ReplyKeyboardMarkup(
                 [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")]], resize_keyboard=True)
