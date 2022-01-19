@@ -1,7 +1,7 @@
+import asyncio
 import logging
 
 from bot import collusers, collqueue, collchats, bot
-from aiogram.utils.exceptions import BotBlocked
 
 
 async def user_statistics():
@@ -80,14 +80,16 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_voice(chat_id=i, voice=data['voice'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
     elif data['type'] == 'text':
         for i in users:
             try:
                 await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
     elif data['type'] == 'video':
@@ -95,7 +97,8 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_video(chat_id=i, video=data['video'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
     elif data['type'] == 'photo':
@@ -103,14 +106,16 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_photo(chat_id=i, photo=data['photo'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
     elif data['type'] == 'sticker':
         for i in users:
             try:
                 await bot.send_sticker(chat_id=i, sticker=data['sticker'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
     elif data['type'] == 'document':
@@ -118,6 +123,8 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_document(chat_id=i, document=data['document'], caption=data['caption'],
                                         caption_entities=data['caption_entities'])
-            except BotBlocked:
+                await asyncio.sleep(0.04)
+            except:
                 collusers.update_one({"_id": i}, {"$set": {"status": False}})
                 logging.warning(f"Ushbu {i} foydalanuvchi botni bloklagan")
+
