@@ -613,7 +613,6 @@ async def no_rep_act(message: types.Message):
             "interlocutor_chat_id"]}, {"$inc": {"reputation": -5}})
         collchats.delete_one({"user_chat_id": message.chat.id})
         collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
-        await message.answer("Javobingiz uchun rahmat!☺️")
         keyboard = ReplyKeyboardMarkup(
             [
                 [KeyboardButton("☕️ Suhbatdosh izlash")],
