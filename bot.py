@@ -323,7 +323,7 @@ async def send_post_act(message: types.Message):
         await message.answer("Bunday buyruq botda mavjud emas!")
 
 
-@dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document"])
+@dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document", "video"])
 async def process_send_post(message: types.Message, state: FSMContext):
     if message.text == "☑️Yuborish":
         data = await state.get_data()
@@ -682,8 +682,9 @@ async def leave_from_chat_act(message: types.Message):
         await menu(message)
 
 
-@dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document"])
+@dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
+    print(message)
     chat = collchats.find_one({"user_chat_id": message.chat.id})
     if message.text == "📝 Ro'yxatdan o'tish":
         await account_registration_act(message)
@@ -750,6 +751,20 @@ async def some_text(message: types.Message):
                     await bot.send_document(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         document=message.document["file_id"])
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    await admin_commands.user_are_blocked_bot(message)
+            elif message.content_type == "video":
+                try:
+                    await bot.send_video(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        video=message.video["file_id"])
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    await admin_commands.user_are_blocked_bot(message)
+            elif message.content_type == "video_note":
+                try:
+                    await bot.send_video_note(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        video_note=message.video_note["file_id"])
                 except (BotKicked, BotBlocked, UserDeactivated):
                     await admin_commands.user_are_blocked_bot(message)
         else:
