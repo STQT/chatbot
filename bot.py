@@ -722,7 +722,7 @@ async def some_text(message: types.Message):
                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                     text=message.text, entities=message.entities)
             except (BotKicked, BotBlocked, UserDeactivated):
-                admin_commands.user_are_blocked_bot(message)
+                await admin_commands.user_are_blocked_bot(message)
         elif chat.get("status", True):
             if message.content_type == "sticker":
                 try:
@@ -730,28 +730,28 @@ async def some_text(message: types.Message):
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         sticker=message.sticker["file_id"])
                 except (BotKicked, BotBlocked, UserDeactivated):
-                    admin_commands.user_are_blocked_bot(message)
+                    await admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "photo":
                 try:
                     await bot.send_photo(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         photo=message.photo[len(message.photo) - 1].file_id)
                 except (BotKicked, BotBlocked, UserDeactivated):
-                    admin_commands.user_are_blocked_bot(message)
+                    await admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "voice":
                 try:
                     await bot.send_voice(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         voice=message.voice["file_id"])
                 except (BotKicked, BotBlocked, UserDeactivated):
-                    admin_commands.user_are_blocked_bot(message)
+                    await admin_commands.user_are_blocked_bot(message)
             elif message.content_type == "document":
                 try:
                     await bot.send_document(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         document=message.document["file_id"])
                 except (BotKicked, BotBlocked, UserDeactivated):
-                    admin_commands.user_are_blocked_bot(message)
+                    await admin_commands.user_are_blocked_bot(message)
         else:
             keyboard = ReplyKeyboardMarkup(
                 [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")]], resize_keyboard=True)

@@ -85,14 +85,14 @@ async def send_post_all_users(data, users):
                                      caption_entities=data['caption_entities'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
     elif data['type'] == 'text':
         for i in users:
             try:
                 await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
     elif data['type'] == 'video':
         for i in users:
             try:
@@ -100,7 +100,7 @@ async def send_post_all_users(data, users):
                                      caption_entities=data['caption_entities'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
     elif data['type'] == 'photo':
         for i in users:
             try:
@@ -108,14 +108,14 @@ async def send_post_all_users(data, users):
                                      caption_entities=data['caption_entities'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
     elif data['type'] == 'sticker':
         for i in users:
             try:
                 await bot.send_sticker(chat_id=i, sticker=data['sticker'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
     elif data['type'] == 'document':
         for i in users:
             try:
@@ -123,10 +123,10 @@ async def send_post_all_users(data, users):
                                         caption_entities=data['caption_entities'])
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
-                user_blocked_with_posting(i)
+                await user_blocked_with_posting(i)
 
 
-def user_are_blocked_bot(message):
+async def user_are_blocked_bot(message):
     keyboard = ReplyKeyboardMarkup(
         [
             [KeyboardButton("☕️ Suhbatdosh izlash")],
@@ -140,6 +140,6 @@ def user_are_blocked_bot(message):
         {"$set": {"status": False}})
 
 
-def user_blocked_with_posting(user):
+async def user_blocked_with_posting(user):
     collusers.update_one({"_id": user}, {"$set": {"status": False}})
     logging.warning(f"Ushbu {user} foydalanuvchi botni bloklagan")
