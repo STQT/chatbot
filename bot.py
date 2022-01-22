@@ -260,9 +260,9 @@ async def account_user(message: types.Message):
     else:
         acc = collusers.find_one({"_id": message.from_user.id})
         text = f"👤Tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
-               f"💵 Balans: {acc['balance']}\n" \
-               f"⭐️Reyting: {acc['reputation']}\n" \
-               f"📝Bio: {acc['bio']}\n" \
+               f"💵 Balans: {acc.get('balance', None)}\n" \
+               f"⭐️Reyting: {acc.get('reputation', None)}\n" \
+               f"📝Bio: {acc.get('bio', None)}\n" \
                f"👫Jins: {acc.get('gender', 'Noaniq')}\n" \
                f"👫Qidiruv: {acc.get('finding', 'Noaniq')}"
         keyboard = ReplyKeyboardMarkup(
