@@ -69,6 +69,8 @@ async def start_menu(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         # Adding new user DB
         collusers.insert_one({"_id": message.from_user.id})
+    elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
+        collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
     else:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
     if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
