@@ -736,6 +736,12 @@ async def taklif_process(message: types.Message, state: FSMContext):
     elif message.text == "🏠 Bosh menyu":
         await state.finish()
         await menu(message)
+    elif message.text == "☕️ Suhbatdosh izlash":
+        await state.finish()
+        await search_user_act(message)
+    elif message.text == "🗣 Takliflar":
+        await state.finish()
+        await taklif_user_message(message)
     else:
         if message.voice:
             await bot.send_voice(chat_id=config.group_id, voice=message.voice.file_id,
