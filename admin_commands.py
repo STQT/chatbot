@@ -141,11 +141,11 @@ async def user_are_blocked_bot(message):
             [KeyboardButton("🔖 Anketa")]
         ], resize_keyboard=True)
     await message.answer("Ushbu foydalanuvchi botni tark etdi :( Boshqa suhbatdoshni qidiring!", reply_markup=keyboard)
-    collchats.delete_one({"user_chat_id": message.chat.id})
-    collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
     collusers.update_one(
         {"_id": collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]},
         {"$set": {"status": False}})
+    collchats.delete_one({"user_chat_id": message.chat.id})
+    collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
 
 
 async def user_blocked_with_posting(user):
