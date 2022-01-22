@@ -89,7 +89,15 @@ async def send_post_all_users(data, users):
     elif data['type'] == 'text':
         for i in users:
             try:
-                await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'])
+                keyboard = ReplyKeyboardMarkup(
+                    [
+                        [
+                            KeyboardButton("☕️ Suhbatdosh izlash")
+                        ],
+                        [
+                            KeyboardButton("🗣 Takliflar")
+                        ]], resize_keyboard=True, one_time_keyboard=True)
+                await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'], reply_markup=keyboard)
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
