@@ -13,6 +13,7 @@ logging.basicConfig(
 )
 
 admin_ids = 256665985, 390736292
+group_id = -650304675
 
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
