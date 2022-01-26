@@ -162,3 +162,18 @@ async def user_are_blocked_bot(message):
 async def user_blocked_with_posting(user):
     collusers.update_one({"_id": user}, {"$set": {"status": False}})
     logging.warning(f"Ushbu {user} foydalanuvchi botni bloklagan")
+
+
+async def is_authenticated(callback):
+    try:
+        for i in config.channel_urls_dict:
+            channel_user = await bot.get_chat_member(f'{i.get("username")}',
+                                                     callback.from_user.id)
+            if channel_user['status'] != "left":
+                return True
+            else:
+                raise Exception(f"Foydalanuvchi: {callback.from_user.id} kanalga a'zo bo'lmagan")
+        return True
+    except Exception as ex:
+        logging.warning(f"Xato: {ex}")
+        return False

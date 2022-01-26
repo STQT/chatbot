@@ -48,7 +48,7 @@ class SetReport(StatesGroup):
 
 
 @dp.message_handler(commands="main_menu")
-async def menu(message: types.Message):
+async def menu(message: types.Message or types.CallbackQuery):
     keyboard = ReplyKeyboardMarkup(
         [
             [
@@ -61,7 +61,7 @@ async def menu(message: types.Message):
         ],
         resize_keyboard=True
     )
-    await bot.send_message(chat_id=message.chat.id, text="🏠 Bosh menyu", reply_markup=keyboard)
+    await bot.send_message(chat_id=message.from_user.id, text="🏠 Bosh menyu", reply_markup=keyboard)
 
 
 @dp.message_handler(commands="start")
@@ -470,127 +470,131 @@ async def process_set_finding_reg(message: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=["search_user", "searchuser"])
 async def search_user_act(message: types.Message):
-    if message.chat.type == "private":
-        # if collusers.count_documents({"_id": message.from_user.id}) == 0:
-        #     await account_user(message)
-        # else:
-        if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
-            keyboard = ReplyKeyboardMarkup(
-                [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True, one_time_keyboard=True)
-            await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
-        else:
-            if collqueue.count_documents({"_id": message.chat.id}) != 1:
+    user_follow_act = await admin_commands.is_authenticated(message)
+    if user_follow_act:
+        if message.chat.type == "private":
+            # if collusers.count_documents({"_id": message.from_user.id}) == 0:
+            #     await account_user(message)
+            # else:
+            if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
                 keyboard = ReplyKeyboardMarkup(
-                    [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
-                # finder_acc = collusers.find_one({"_id": message.from_user.id})
-                # interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
-                #                                    "_finding": finder_acc.get('gender')})
-                interlocutor = None
-                queue_search = list(collqueue.aggregate([{"$sample": {"size": 1}}]))
-                if queue_search:
-                    if queue_search[0]["_id"] != message.chat.id:
-                        interlocutor = queue_search[0]
+                    [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True, one_time_keyboard=True)
+                await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
+            else:
+                if collqueue.count_documents({"_id": message.chat.id}) != 1:
+                    keyboard = ReplyKeyboardMarkup(
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    # finder_acc = collusers.find_one({"_id": message.from_user.id})
+                    # interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
+                    #                                    "_finding": finder_acc.get('gender')})
+                    interlocutor = None
+                    queue_search = list(collqueue.aggregate([{"$sample": {"size": 1}}]))
+                    if queue_search:
+                        if queue_search[0]["_id"] != message.chat.id:
+                            interlocutor = queue_search[0]
 
-                # if interlocutor is None:
-                #     user_gender_var = finder_acc.get('gender')
-                #     user_find = finder_acc.get('finding')
-                #     if user_find == "👤 Muhim emas":
-                #         interlocutor = collqueue.find_one(
-                #             {
-                #                 "_sex": {
-                #                     "$in":
-                #                         ["👩‍ Ayol kishi",
-                #                          "👨‍ Yigit kishi"]
-                #                 },
-                #                 "_finding": {
-                #                     "$in":
-                #                         [finder_acc.get('gender'),
-                #                          "👤 Muhim emas"]
-                #                 }
-                #             })
-                #     elif user_gender_var == "👤 Muhim emas":
-                #         # TODO: clear after change
-                #         interlocutor = collqueue.find_one(
-                #             {
-                #                 "_sex": finder_acc.get('finding'),
-                #                 "$or":
-                #                     [
-                #                         {"_finding": "👤 Muhim emas"},
-                #                         {"_finding": "👩‍ Ayol kishi"},
-                #                         {"_finding": "👨‍ Yigit kishi"}
-                #                     ],
-                #             })
-                #     elif user_gender_var == "👤 Muhim emas" and user_find == "👤 Muhim emas":
-                #         interlocutor = collqueue.find_one({})
-                if interlocutor is None:
-                    # acc = collusers.find_one({"_id": message.from_user.id})
-                    collqueue.insert_one({
-                        "_id": message.chat.id,
-                        # "_sex": acc.get('gender'),
-                        # "_finding": acc.get('finding')
-                    })
-                    await message.answer(
-                        "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
-                else:
-                    if collqueue.count_documents({"_id": interlocutor["_id"]}) != 0:
-                        collqueue.delete_one({"_id": message.chat.id})
-                        collqueue.delete_one({"_id": interlocutor["_id"]})
-
-                        collchats.insert_one(
-                            {
-                                "user_chat_id": message.chat.id,
-                                "interlocutor_chat_id": interlocutor["_id"]
-                            }
-                        )
-                        collchats.insert_one(
-                            {
-                                "user_chat_id": interlocutor["_id"],
-                                "interlocutor_chat_id": message.chat.id
-                            }
-                        )
-                        # nickname_intestlocutor = collusers.find_one(
-                        #     {"_id": message.chat.id}).get("nickname", "Yo'q")
-                        # bio_intestlocutor = collusers.find_one(
-                        #     {"_id": message.chat.id}).get("bio", "Bio mavjud emas")
-                        # gender_intestlocutor = collusers.find_one(
-                        #     {"_id": message.chat.id}).get("gender", "Noaniq")
-                        # bio_user = collusers.find_one({"_id": collchats.find_one(
-                        #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("bio", "Bio yo'q")
-                        # nickname_user = collusers.find_one({"_id": collchats.find_one(
-                        #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("nickname", "Yo'q")
-                        # gender_user = collusers.find_one({"_id": collchats.find_one(
-                        #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("gender", "Noaniq")
-                        keyboard_leave = ReplyKeyboardMarkup([[
-                            KeyboardButton(
-                                "💔 Suhbatni yakunlash")]],
-                            resize_keyboard=True, one_time_keyboard=True)
-                        chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
-                            "interlocutor_chat_id"]
-
-                        await message.answer(
-                            "Suhbatdosh topildi!😉\n",
-                            # "Suhbatni boshlashingiz mumkin.🥳\n"
-                            # f"\nSuhbatdoshingiz tahallusi: {nickname_user}\n"
-                            # f"Suhbatdoshingiz biosi: {bio_user}\n"
-                            # f"Suhbatdoshingiz jinsi: {gender_user}",
-                            reply_markup=keyboard_leave)
-                        await bot.send_message(
-                            text="Suhbatdosh topildi!😉\n",
-                                 # "Suhbatni boshlashingiz mumkin.🥳\n\n"
-                                 # f"Suhbatdosh tahallusi: {nickname_intestlocutor}\n"
-                                 # f"Suhbatdosh biosi: {bio_intestlocutor}\n"
-                                 # f"Suhbatdosh jinsi: {gender_intestlocutor}",
-                            chat_id=chat_info,
-                            reply_markup=keyboard_leave)
-                    else:
-                        collqueue.insert_one({"_id": message.chat.id})
-                        logging.warning("Shu joyi qachondir ishlarmikin?!")
+                    # if interlocutor is None:
+                    #     user_gender_var = finder_acc.get('gender')
+                    #     user_find = finder_acc.get('finding')
+                    #     if user_find == "👤 Muhim emas":
+                    #         interlocutor = collqueue.find_one(
+                    #             {
+                    #                 "_sex": {
+                    #                     "$in":
+                    #                         ["👩‍ Ayol kishi",
+                    #                          "👨‍ Yigit kishi"]
+                    #                 },
+                    #                 "_finding": {
+                    #                     "$in":
+                    #                         [finder_acc.get('gender'),
+                    #                          "👤 Muhim emas"]
+                    #                 }
+                    #             })
+                    #     elif user_gender_var == "👤 Muhim emas":
+                    #         # TODO: clear after change
+                    #         interlocutor = collqueue.find_one(
+                    #             {
+                    #                 "_sex": finder_acc.get('finding'),
+                    #                 "$or":
+                    #                     [
+                    #                         {"_finding": "👤 Muhim emas"},
+                    #                         {"_finding": "👩‍ Ayol kishi"},
+                    #                         {"_finding": "👨‍ Yigit kishi"}
+                    #                     ],
+                    #             })
+                    #     elif user_gender_var == "👤 Muhim emas" and user_find == "👤 Muhim emas":
+                    #         interlocutor = collqueue.find_one({})
+                    if interlocutor is None:
+                        # acc = collusers.find_one({"_id": message.from_user.id})
+                        collqueue.insert_one({
+                            "_id": message.chat.id,
+                            # "_sex": acc.get('gender'),
+                            # "_finding": acc.get('finding')
+                        })
                         await message.answer(
                             "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
-            else:
-                keyboard = ReplyKeyboardMarkup(
-                    [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
-                await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉", reply_markup=keyboard)
+                    else:
+                        if collqueue.count_documents({"_id": interlocutor["_id"]}) != 0:
+                            collqueue.delete_one({"_id": message.chat.id})
+                            collqueue.delete_one({"_id": interlocutor["_id"]})
+
+                            collchats.insert_one(
+                                {
+                                    "user_chat_id": message.chat.id,
+                                    "interlocutor_chat_id": interlocutor["_id"]
+                                }
+                            )
+                            collchats.insert_one(
+                                {
+                                    "user_chat_id": interlocutor["_id"],
+                                    "interlocutor_chat_id": message.chat.id
+                                }
+                            )
+                            # nickname_intestlocutor = collusers.find_one(
+                            #     {"_id": message.chat.id}).get("nickname", "Yo'q")
+                            # bio_intestlocutor = collusers.find_one(
+                            #     {"_id": message.chat.id}).get("bio", "Bio mavjud emas")
+                            # gender_intestlocutor = collusers.find_one(
+                            #     {"_id": message.chat.id}).get("gender", "Noaniq")
+                            # bio_user = collusers.find_one({"_id": collchats.find_one(
+                            #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("bio", "Bio yo'q")
+                            # nickname_user = collusers.find_one({"_id": collchats.find_one(
+                            #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("nickname", "Yo'q")
+                            # gender_user = collusers.find_one({"_id": collchats.find_one(
+                            #     {"user_chat_id": message.chat.id})["interlocutor_chat_id"]}).get("gender", "Noaniq")
+                            keyboard_leave = ReplyKeyboardMarkup([[
+                                KeyboardButton(
+                                    "💔 Suhbatni yakunlash")]],
+                                resize_keyboard=True, one_time_keyboard=True)
+                            chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
+                                "interlocutor_chat_id"]
+
+                            await message.answer(
+                                "Suhbatdosh topildi!😉\n",
+                                # "Suhbatni boshlashingiz mumkin.🥳\n"
+                                # f"\nSuhbatdoshingiz tahallusi: {nickname_user}\n"
+                                # f"Suhbatdoshingiz biosi: {bio_user}\n"
+                                # f"Suhbatdoshingiz jinsi: {gender_user}",
+                                reply_markup=keyboard_leave)
+                            await bot.send_message(
+                                text="Suhbatdosh topildi!😉\n",
+                                     # "Suhbatni boshlashingiz mumkin.🥳\n\n"
+                                     # f"Suhbatdosh tahallusi: {nickname_intestlocutor}\n"
+                                     # f"Suhbatdosh biosi: {bio_intestlocutor}\n"
+                                     # f"Suhbatdosh jinsi: {gender_intestlocutor}",
+                                chat_id=chat_info,
+                                reply_markup=keyboard_leave)
+                        else:
+                            collqueue.insert_one({"_id": message.chat.id})
+                            logging.warning("Shu joyi qachondir ishlarmikin?!")
+                            await message.answer(
+                                "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
+                else:
+                    keyboard = ReplyKeyboardMarkup(
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉", reply_markup=keyboard)
+    else:
+        await following_channel(message)
 
 
 @dp.message_handler(commands=["stop_search"])
@@ -776,6 +780,25 @@ async def taklif_process(message: types.Message, state: FSMContext):
         await message.answer("Yuborish kerakmi?", reply_markup=keyboard)
 
 
+@dp.message_handler(commands=["follow"])
+async def following_channel(msg):
+    keyboard_buttons = []
+    for i in config.channel_urls_dict:
+        keyboard_buttons.append(
+            InlineKeyboardButton(f"{i.get('title')}",
+                                 url=i.get('link')))
+    inline_keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            keyboard_buttons,
+            [InlineKeyboardButton("✅ Tasdiqlash",
+                                  callback_data=CallbackData("choice", "action").new(
+                                      action="channel_subscribe"))]
+        ],
+        one_time_keyboard=True
+    )
+    await msg.answer("Kanalga a'zo bo'lish majburiy!", reply_markup=inline_keyboard)
+
+
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
@@ -899,6 +922,15 @@ async def process_remove_account(callback: types.CallbackQuery):
 @dp.callback_query_handler(text_contains="cancel")
 async def process_cancel(callback: types.CallbackQuery):
     await callback.message.answer("Yaxshi, qaytib bunaqa hazil qilmang 😉")
+
+
+@dp.callback_query_handler(text_contains='channel_subscribe')
+async def channel_affirmative_reg(callback_query: types.CallbackQuery):
+    if await admin_commands.is_authenticated(callback_query):
+        await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
+        await menu(callback_query)
+    else:
+        await callback_query.answer(text="A'zo bo'lmadingiz!", show_alert=True)
 
 
 if __name__ == "__main__":

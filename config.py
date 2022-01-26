@@ -14,6 +14,13 @@ logging.basicConfig(
 
 admin_ids = 256665985, 390736292
 group_id = -650304675
+channel_urls_dict = ({
+    "title": "Мозийга бир назар",
+    "link": "https://t.me/+DZwI0NReOPAxYTk6",
+    "username": "@moziy_nazar"
+},
+)
 
-BOT_TOKEN = os.environ.get("davrabot")
+
+# BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
