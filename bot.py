@@ -68,7 +68,8 @@ async def menu(message: types.Message or types.CallbackQuery):
 async def start_menu(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         # Adding new user DB
-        collusers.insert_one({"_id": message.from_user.id})
+        # collusers.insert_one({"_id": message.from_user.id})
+        await account_registration_act(message)
     elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
     else:
@@ -437,14 +438,15 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
             return True
 
         await message.answer("Ma'lumotlar saqlandi")
-        # await state.finish()
-        await SetRegBio.finding.set()
-        keyboard = ReplyKeyboardMarkup(
-            [[KeyboardButton("👨‍ Yigit kishi"),
-              KeyboardButton("👩‍ Ayol kishi"),
-              KeyboardButton("👤 Muhim emas")
-              ]], resize_keyboard=True, one_time_keyboard=True)
-        await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
+        await state.finish()  # Finished this
+        await account_user(message)
+        # await SetRegBio.finding.set()
+        # keyboard = ReplyKeyboardMarkup(
+        #     [[KeyboardButton("👨‍ Yigit kishi"),
+        #       KeyboardButton("👩‍ Ayol kishi"),
+        #       KeyboardButton("👤 Muhim emas")
+        #       ]], resize_keyboard=True, one_time_keyboard=True)
+        # await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
 
 
 @dp.message_handler(state=SetRegBio.finding)
