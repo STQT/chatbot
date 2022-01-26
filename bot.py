@@ -440,7 +440,7 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
 
         await message.answer("Ma'lumotlar saqlandi")
         await state.finish()  # Finished this
-        await account_user(message)
+        await menu(message)
         # await SetRegBio.finding.set()
         # keyboard = ReplyKeyboardMarkup(
         #     [[KeyboardButton("👨‍ Yigit kishi"),
