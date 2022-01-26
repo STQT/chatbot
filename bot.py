@@ -691,7 +691,7 @@ async def all_stats_info(message: types.Message):
     msg = "Barcha statistika:\n\n" \
           f"     *Users*   \n{user_stats}\n\n" \
           f"     *Chats* \nAll:{len(chat_all_list)}\n" \
-          f"               Blocked: {len(chat_block_list)}\n\n" \
+          f"     Blocked: {len(chat_block_list)}\n\n" \
           f"     *Queue's*  \n{queue_stats}"
     await message.answer(msg, parse_mode="MarkdownV2")
 
@@ -713,7 +713,8 @@ async def leave_from_chat_act(message: types.Message):
             resize_keyboard=True
         )
         try:
-            await bot.send_message(text="Suhbatdoshingiz chatni tark etdi",
+            await bot.send_message(text="Suhbatdoshingiz chatni tark etdi,\n"
+                                        "Muloqot maroqli o'tdimi?",
                                    chat_id=collchats.find_one(
                                        {"user_chat_id": message.chat.id}).get("interlocutor_chat_id"),
                                    reply_markup=keyboard)

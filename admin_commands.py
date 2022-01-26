@@ -56,10 +56,9 @@ async def chat_statistics():
 async def delete_blocked_chats(message):
     if message.from_user.id in config.admin_ids:
         collchats.delete_many({"status": False})
-        await message.answer("Barcha nofaol chatlar bloklandi")
+        await message.answer("Barcha nofaol chatlar o'chirildi")
     else:
         await message.answer("Bunday buyruq mavjud emas")
-
 
 
 async def get_all_active_users():
