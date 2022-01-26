@@ -22,5 +22,5 @@ channel_urls_dict = ({
 )
 
 
-# BOT_TOKEN = os.environ.get("davrabot")
+BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
