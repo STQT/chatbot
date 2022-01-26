@@ -70,6 +70,7 @@ async def start_menu(message: types.Message):
         # Adding new user DB
         # collusers.insert_one({"_id": message.from_user.id})
         await account_registration_act(message)
+        return True
     elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
     else:
