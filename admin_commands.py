@@ -4,6 +4,7 @@ import logging
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated
 
+import config
 from bot import collusers, collqueue, collchats, bot
 
 
@@ -46,8 +47,19 @@ async def queue_statistics():
 
 async def chat_statistics():
     x = collchats.find()
+    y = collchats.find({"status": False})
     list1 = [a for a in x]
-    return list1
+    list2 = [b for b in y]
+    return list1, list2
+
+
+async def delete_blocked_chats(message):
+    if message.from_user.id in config.admin_ids:
+        collchats.delete_many({"status": False})
+        await message.answer("Barcha nofaol chatlar bloklandi")
+    else:
+        await message.answer("Bunday buyruq mavjud emas")
+
 
 
 async def get_all_active_users():
