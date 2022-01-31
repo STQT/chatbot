@@ -16,7 +16,7 @@ admin_ids = 256665985, 390736292
 group_id = -650304675
 channel_urls_dict = ({
     "title": "Мозийга бир назар",
-    "link": "https://t.me/+DZwI0NReOPAxYTk6",
+    "link": "https://t.me/+ZwCfAKCjmeFkNmNi",
     "username": "@moziy_nazar"
 },
 )
