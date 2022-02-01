@@ -577,7 +577,7 @@ async def search_user_act(message: types.Message):
                                 resize_keyboard=True, one_time_keyboard=True)
                             chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
                                 "interlocutor_chat_id"]
-
+                            # TODO blocking users look bot-log-01-26.log
                             await message.answer(
                                 "Suhbatdosh topildi!😉\n",
                                 # "Suhbatni boshlashingiz mumkin.🥳\n"
