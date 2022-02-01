@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher, types, executor
@@ -54,6 +55,7 @@ async def menu(message: types.Message or types.CallbackQuery):
             [
                 KeyboardButton("☕️ Suhbatdosh izlash")
             ],
+            [KeyboardButton("👩 Qizlar izlash")],
             [
                 # KeyboardButton("🔖 Anketa")
                 KeyboardButton("🗣 Takliflar")
@@ -67,33 +69,31 @@ async def menu(message: types.Message or types.CallbackQuery):
 @dp.message_handler(commands="start")
 async def start_menu(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
-        # Adding new user DB
-        # collusers.insert_one({"_id": message.from_user.id})
-        await account_registration_act(message)
-        return True
+        if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
+                collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
+            # 1. Check start ref ID
+            # 2. Check tg self user ID
+            # 3. Check is there ref user ID in DB
+            collrefs.insert_one(
+                {
+                    "_id": message.from_user.id,
+                    "_ref": int(message.text.split()[1])
+                }
+            )
+            await account_registration_act(message, int(message.text.split()[1]))
+        else:
+            await account_registration_act(message)
     elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
     else:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
-    if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
-            collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
-        # 1. Check start ref ID
-        # 2. Check tg self user ID
-        # 3. Check is there ref user ID in DB
-        collrefs.insert_one(
-            {
-                "_id": message.from_user.id,
-                "_ref": int(message.text.split()[1])
-            }
-        )
-        collusers.update_one({"_id": int(message.text.split()[1])}, {
-            "$inc": {"balance": 1}})
 
     keyboard = ReplyKeyboardMarkup(
         [
             [
                 KeyboardButton("☕️ Suhbatdosh izlash")
             ],
+            [KeyboardButton("👩 Qizlar izlash")],
             [
                 # KeyboardButton("🔖 Anketa")
                 KeyboardButton("🗣 Takliflar")
@@ -311,7 +311,7 @@ async def remove_account_act(message: types.Message):
 
 
 @dp.message_handler(commands=["reg", "registration"])
-async def account_registration_act(message: types.Message):
+async def account_registration_act(message: types.Message, ref_id=None):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         collusers.insert_one(
             {
@@ -322,6 +322,9 @@ async def account_registration_act(message: types.Message):
                 "bio": "Tarmoqdagi foydalanuvchilardan biri",
             }
         )
+        if ref_id:
+            collusers.update_one({"_id": int(message.text.split()[1])}, {
+                "$inc": {"balance": 1}})
         await SetRegBio.user_bio.set()
         await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
     else:
@@ -487,14 +490,17 @@ async def search_user_act(message: types.Message):
                 if collqueue.count_documents({"_id": message.chat.id}) != 1:
                     keyboard = ReplyKeyboardMarkup(
                         [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
-                    # finder_acc = collusers.find_one({"_id": message.from_user.id})
-                    # interlocutor = collqueue.find_one({"_sex": finder_acc.get('finding'),
-                    #                                    "_finding": finder_acc.get('gender')})
-                    interlocutor = None
-                    queue_search = list(collqueue.aggregate([{"$sample": {"size": 1}}]))
-                    if queue_search:
-                        if queue_search[0]["_id"] != message.chat.id:
-                            interlocutor = queue_search[0]
+                    finder_acc = collusers.find_one({"_id": message.from_user.id})
+                    if finder_acc.get("gender") != "👩‍ Ayol kishi":
+                        interlocutor = collqueue.find_one({"_sex": {"$nin": ["👩‍ Ayol kishi"]}})
+                    else:
+                        interlocutor = collqueue.find_one({"reputation": True})
+                        if interlocutor is None:
+                            interlocutor = collqueue.find_one()
+                    # queue_search = list(collqueue.aggregate([{"$sample": {"size": 1}}]))
+                    # if queue_search:
+                    #     if queue_search[0]["_id"] != message.chat.id:
+                    #         interlocutor = queue_search[0]
 
                     # if interlocutor is None:
                     #     user_gender_var = finder_acc.get('gender')
@@ -528,10 +534,10 @@ async def search_user_act(message: types.Message):
                     #     elif user_gender_var == "👤 Muhim emas" and user_find == "👤 Muhim emas":
                     #         interlocutor = collqueue.find_one({})
                     if interlocutor is None:
-                        # acc = collusers.find_one({"_id": message.from_user.id})
+                        acc = collusers.find_one({"_id": message.from_user.id})
                         collqueue.insert_one({
                             "_id": message.chat.id,
-                            # "_sex": acc.get('gender'),
+                            "_sex": acc.get('gender'),
                             # "_finding": acc.get('finding')
                         })
                         await message.answer(
@@ -581,10 +587,10 @@ async def search_user_act(message: types.Message):
                                 reply_markup=keyboard_leave)
                             await bot.send_message(
                                 text="Suhbatdosh topildi!😉\n",
-                                     # "Suhbatni boshlashingiz mumkin.🥳\n\n"
-                                     # f"Suhbatdosh tahallusi: {nickname_intestlocutor}\n"
-                                     # f"Suhbatdosh biosi: {bio_intestlocutor}\n"
-                                     # f"Suhbatdosh jinsi: {gender_intestlocutor}",
+                                # "Suhbatni boshlashingiz mumkin.🥳\n\n"
+                                # f"Suhbatdosh tahallusi: {nickname_intestlocutor}\n"
+                                # f"Suhbatdosh biosi: {bio_intestlocutor}\n"
+                                # f"Suhbatdosh jinsi: {gender_intestlocutor}",
                                 chat_id=chat_info,
                                 reply_markup=keyboard_leave)
                         else:
@@ -598,6 +604,90 @@ async def search_user_act(message: types.Message):
                     await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉", reply_markup=keyboard)
     else:
         await following_channel(message)
+
+
+async def search_girl_func():
+    interlocutor = collqueue.find_one({"_sex": "👩‍ Ayol kishi"})
+    return interlocutor
+
+
+@dp.message_handler(commands=["search_girl", "searchgirl"])
+async def search_girl_act(message: types.Message):
+    user_follow_act = await admin_commands.is_authenticated(message)
+    acc = collusers.find_one({"_id": message.from_user.id})
+    if not acc:
+        await account_registration_act(message)
+    if user_follow_act and acc.get("balance", 0) > 9:
+        if message.chat.type == "private":
+            if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
+                keyboard = ReplyKeyboardMarkup(
+                    [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True, one_time_keyboard=True)
+                await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
+            else:
+                if collqueue.count_documents({"_id": message.chat.id}) != 1:
+                    keyboard = ReplyKeyboardMarkup(
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    interlocutor = await search_girl_func()
+                    await message.answer(
+                        "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
+                    if interlocutor is None:
+                        await asyncio.sleep(5)
+                        await message.answer("Qaytadan urunib ko'ryapmiz...")
+                        await asyncio.sleep(5)
+                        await search_girl_func()
+                        if interlocutor is None:
+                            await message.answer("Hozirda bizda online Qizlar (Ayollar) mavjud emas\n"
+                                                 "Bordiyu online bo'lsa sizga xabar beramiz",
+                                                 reply_markup=keyboard)
+
+                    if interlocutor is None:
+                        collqueue.insert_one({
+                            "_id": message.chat.id,
+                            "reputation": True,
+                            # "_finding": acc.get('finding')
+                        })
+                    else:
+                        if collqueue.count_documents({"_id": interlocutor["_id"]}) != 0:
+                            collqueue.delete_one({"_id": message.chat.id})
+                            collqueue.delete_one({"_id": interlocutor["_id"]})
+
+                            collchats.insert_one(
+                                {
+                                    "user_chat_id": message.chat.id,
+                                    "interlocutor_chat_id": interlocutor["_id"]
+                                }
+                            )
+                            collchats.insert_one(
+                                {
+                                    "user_chat_id": interlocutor["_id"],
+                                    "interlocutor_chat_id": message.chat.id
+                                }
+                            )
+                            keyboard_leave = ReplyKeyboardMarkup([[
+                                KeyboardButton(
+                                    "💔 Suhbatni yakunlash")]],
+                                resize_keyboard=True, one_time_keyboard=True)
+                            chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
+                                "interlocutor_chat_id"]
+
+                            await message.answer(
+                                "Suhbatdosh topildi!😉\n",
+                                reply_markup=keyboard_leave)
+                            await bot.send_message(
+                                text="Suhbatdosh topildi!😉\n",
+                                chat_id=chat_info,
+                                reply_markup=keyboard_leave)
+                        else:
+                            collqueue.insert_one({"_id": message.chat.id})
+                            logging.warning("Shu joyi qachondir ishlarmikin?!")
+                            await message.answer(
+                                "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
+                else:
+                    keyboard = ReplyKeyboardMarkup(
+                        [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
+                    await message.answer("Siz suhbatdosh izlayapsiz, biroz sabr qiling 🕒😉", reply_markup=keyboard)
+    else:
+        await reposting_bot(message)
 
 
 @dp.message_handler(commands=["stop_search"])
@@ -620,6 +710,7 @@ async def yes_rep_act(message: types.Message):
         keyboard = ReplyKeyboardMarkup(
             [
                 [KeyboardButton("☕️ Suhbatdosh izlash")],
+                [KeyboardButton("👩 Qizlar izlash")],
                 # [KeyboardButton("🔖 Anketa")]
                 [KeyboardButton("🗣 Takliflar")]
             ],
@@ -642,6 +733,7 @@ async def no_rep_act(message: types.Message):
             [
                 [KeyboardButton("☕️ Suhbatdosh izlash")],
                 # [KeyboardButton("🔖 Anketa")]
+                [KeyboardButton("👩 Qizlar izlash")],
                 [KeyboardButton("🗣 Takliflar")]
             ],
             resize_keyboard=True
@@ -745,6 +837,43 @@ async def taklif_user_message(message):
     await message.answer("Bizga o'z takliflaringizni yuboring!")
 
 
+@dp.message_handler(commands=["follow"])
+async def following_channel(msg):
+    keyboard_buttons = []
+    for i in config.channel_urls_dict:
+        keyboard_buttons.append(
+            InlineKeyboardButton(f"{i.get('title')}",
+                                 url=i.get('link')))
+    inline_keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            keyboard_buttons,
+            [InlineKeyboardButton("✅ Tasdiqlash",
+                                  callback_data=CallbackData("choice", "action").new(
+                                      action="channel_subscribe"))]
+        ],
+        one_time_keyboard=True
+    )
+    await msg.answer("Kanalga a'zo bo'lish majburiy!", reply_markup=inline_keyboard)
+
+
+@dp.message_handler(commands=["repost"])
+async def reposting_bot(msg):
+    acc = collusers.find_one({"_id": msg.from_user.id})
+    balance = acc.get('balance', 0)
+    keyboard = InlineKeyboardMarkup()
+    keyboard.add(InlineKeyboardButton("Do'st topish", url=f"https://t.me/davra_bot?start={msg.from_user.id}"))
+    await msg.answer("Qizlar bilan suhbat uchun siz shu botga 10 ta foydalanuvchi olib kelishingiz kerak!\n"
+                     "Hozirda siz qo'shgan *yangi* foydalanuvchilar soni:\n"
+                     f"👤: *{balance}*\n\n"
+                     f"Qizlar bilan suhbat uchun yana *{10 - balance}* ta odam kirishi kerak",
+                     parse_mode="markdown")
+    await msg.answer("Do'stlar orttirishni hoxlaysizmi?\n"
+                     "Unda shu havolani ulashing:\n\n"
+                     f"`t.me/davra_bot?start={msg.from_user.id}`\n\n"
+                     f"[Do'st orttirish uchun havola](t.me/davra_bot?start={msg.from_user.id}\n",
+                     reply_markup=keyboard, parse_mode="markdown")
+
+
 @dp.message_handler(state=SetReport.report, content_types=["text", "sticker", "photo", "voice", "document", "video"])
 async def taklif_process(message: types.Message, state: FSMContext):
     if message.text == "✅ Tasdiqlash":
@@ -773,7 +902,8 @@ async def taklif_process(message: types.Message, state: FSMContext):
         elif message.sticker:
             await bot.send_sticker(chat_id=config.group_id, sticker=message.sticker.file_id)
         elif message.text:
-            await bot.send_message(chat_id=config.group_id, text=message.text)
+            await bot.send_message(chat_id=config.group_id, text=f"UserID:{message.from_user.id}\n"
+                                                                 f"{message.text}")
         elif message.document:
             await bot.send_document(chat_id=config.group_id, document=message.document.file_id)
         # await state.finish()
@@ -781,25 +911,6 @@ async def taklif_process(message: types.Message, state: FSMContext):
             [[KeyboardButton("✅ Tasdiqlash"), KeyboardButton("🏠 Bosh menyu")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Yuborish kerakmi?", reply_markup=keyboard)
-
-
-@dp.message_handler(commands=["follow"])
-async def following_channel(msg):
-    keyboard_buttons = []
-    for i in config.channel_urls_dict:
-        keyboard_buttons.append(
-            InlineKeyboardButton(f"{i.get('title')}",
-                                 url=i.get('link')))
-    inline_keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            keyboard_buttons,
-            [InlineKeyboardButton("✅ Tasdiqlash",
-                                  callback_data=CallbackData("choice", "action").new(
-                                      action="channel_subscribe"))]
-        ],
-        one_time_keyboard=True
-    )
-    await msg.answer("Kanalga a'zo bo'lish majburiy!", reply_markup=inline_keyboard)
 
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
@@ -819,6 +930,8 @@ async def some_text(message: types.Message):
     #     await remove_account_act(message)
     elif message.text == "☕️ Suhbatdosh izlash":
         await search_user_act(message)
+    elif message.text == "👩 Qizlar izlash":
+        await search_girl_act(message)
     elif message.text == "📛 Izlashni to'xtatish":
         await stop_search_act(message)
     # :TODO next day remove commands
