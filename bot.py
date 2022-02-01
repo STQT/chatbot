@@ -862,7 +862,8 @@ async def reposting_bot(msg):
     balance = acc.get('balance', 0)
     keyboard = InlineKeyboardMarkup()
     keyboard.add(InlineKeyboardButton("Do'st topish", url=f"https://t.me/davra_bot?start={msg.from_user.id}"))
-    await msg.answer("Qizlar bilan suhbat uchun siz shu botga 10 ta foydalanuvchi olib kelishingiz kerak!\n"
+    await msg.answer("To'g'ridan-to'g'ri qizlar izlash funksiyasini yoqish uchun 10 "
+                     "nafar foydalanuvchi havola orqali botga a'zo qilishingiz talab qilinadi\n"
                      "Hozirda siz qo'shgan *yangi* foydalanuvchilar soni:\n"
                      f"👤: *{balance}*\n\n"
                      f"Qizlar bilan suhbat uchun yana *{10 - balance}* ta odam kirishi kerak",
