@@ -68,6 +68,19 @@ async def menu(message: types.Message or types.CallbackQuery):
 
 @dp.message_handler(commands="start")
 async def start_menu(message: types.Message):
+    keyboard = ReplyKeyboardMarkup(
+        [
+            [
+                KeyboardButton("☕️ Suhbatdosh izlash")
+            ],
+            [KeyboardButton("👩 Qizlar izlash")],
+            [
+                # KeyboardButton("🔖 Anketa")
+                KeyboardButton("🗣 Takliflar")
+            ]
+        ],
+        resize_keyboard=True
+    )
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
                 collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
@@ -85,24 +98,10 @@ async def start_menu(message: types.Message):
             await account_registration_act(message)
     elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
+        await message.answer("🏠 Bosh menyu", reply_markup=keyboard)
     else:
         collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
-
-    keyboard = ReplyKeyboardMarkup(
-        [
-            [
-                KeyboardButton("☕️ Suhbatdosh izlash")
-            ],
-            [KeyboardButton("👩 Qizlar izlash")],
-            [
-                # KeyboardButton("🔖 Anketa")
-                KeyboardButton("🗣 Takliflar")
-            ]
-        ],
-        resize_keyboard=True
-    )
-
-    await message.answer("🏠 Bosh menyu", reply_markup=keyboard)
+        await message.answer("🏠 Bosh menyu", reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["anketa", "set_bio", "new_bio", "about_me"])
@@ -323,7 +322,7 @@ async def account_registration_act(message: types.Message, ref_id=None):
             }
         )
         if ref_id:
-            collusers.update_one({"_id": int(message.text.split()[1])}, {
+            collusers.update_one({"_id": ref_id}, {
                 "$inc": {"balance": 1}})
         await SetRegBio.user_bio.set()
         await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
