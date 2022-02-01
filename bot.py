@@ -83,7 +83,7 @@ async def start_menu(message: types.Message):
     )
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
-                collrefs.count_documents({"_ref": int(message.text.split()[1])}) == 0:
+                collrefs.count_documents({"_id": int(message.text.split()[1])}) == 0:
             # 1. Check start ref ID
             # 2. Check tg self user ID
             # 3. Check is there ref user ID in DB
@@ -93,7 +93,9 @@ async def start_menu(message: types.Message):
                     "_ref": int(message.text.split()[1])
                 }
             )
-            await account_registration_act(message, int(message.text.split()[1]))
+            collusers.update_one({"_id": int(message.text.split()[1])}, {
+                "$inc": {"balance": 1}})
+            await account_registration_act(message)
         else:
             await account_registration_act(message)
     elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
@@ -310,8 +312,9 @@ async def remove_account_act(message: types.Message):
 
 
 @dp.message_handler(commands=["reg", "registration"])
-async def account_registration_act(message: types.Message, ref_id=None):
+async def account_registration_act(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
+        print("BABA")
         collusers.insert_one(
             {
                 "_id": message.from_user.id,
@@ -321,9 +324,6 @@ async def account_registration_act(message: types.Message, ref_id=None):
                 "bio": "Tarmoqdagi foydalanuvchilardan biri",
             }
         )
-        if ref_id:
-            collusers.update_one({"_id": ref_id}, {
-                "$inc": {"balance": 1}})
         await SetRegBio.user_bio.set()
         await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
     else:
