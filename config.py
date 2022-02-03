@@ -2,7 +2,6 @@ import logging
 import datetime
 import os
 
-from dotenv import load_dotenv
 
 formatter = '[%(asctime)s] %(levelname)8s --- %(message)s (%(filename)s:%(lineno)s)'
 logging.basicConfig(
@@ -21,7 +20,7 @@ channel_urls_dict = ({
     "username": "@moziy_nazar"
 },
 )
-load_dotenv()
 
-BOT_TOKEN = os.getenv("davrabot")
-MONGO_URL = os.getenv("davra_db")
+
+BOT_TOKEN = os.environ.get("davrabot")
+MONGO_URL = os.environ.get("davra_db")
