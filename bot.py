@@ -777,7 +777,7 @@ async def mini_stats_info(message: types.Message):
 
 
 @dp.message_handler(commands=['delete_chats'])
-async def all_stats_info(message: types.Message):
+async def delete_chats(message: types.Message):
     await admin_commands.delete_blocked_chats(message)
 
 
@@ -788,8 +788,7 @@ async def all_stats_info(message: types.Message):
     queue_stats = await admin_commands.queue_statistics()
     msg = "Barcha statistika:\n\n" \
           f"     *Users*   \n{user_stats}\n\n" \
-          f"     *Chats* \nAll:{len(chat_all_list)}\n" \
-          f"     Blocked: {len(chat_block_list)}\n\n" \
+          f"     *Chats* \nAll:{len(chat_all_list)-len(chat_block_list)}\n" \
           f"     *Queue's*  \n{queue_stats}"
     await message.answer(msg, parse_mode="MarkdownV2")
 
