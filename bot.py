@@ -492,6 +492,8 @@ async def search_user_act(message: types.Message):
                     finder_acc = collusers.find_one({"_id": message.from_user.id})
                     if finder_acc.get("gender") != "👩‍ Ayol kishi":
                         interlocutor = collqueue.find_one({"_sex": {"$nin": ["👩‍ Ayol kishi"]}})
+                        if interlocutor is None:
+                            interlocutor = collqueue.find_one()
                     else:
                         interlocutor = collqueue.find_one({"reputation": True})
                         if interlocutor is None:
