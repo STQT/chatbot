@@ -2,6 +2,7 @@ import logging
 import datetime
 import os
 
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 formatter = '[%(asctime)s] %(levelname)8s --- %(message)s (%(filename)s:%(lineno)s)'
 logging.basicConfig(
@@ -20,6 +21,34 @@ channel_urls_dict = ({
     "username": "@moziy_nazar"
 },
 )
+
+cities = ("Toshkent", "Andijon", "Buxoro",
+          "Jizzax", "Sirdaryo", "Qoraqalpogʻiston",
+          "Xorazm", "Navoiy", "Namangan",
+          "Fargʻona", "Toshkent v", "Qashqadaryo",
+          "Samarqand", "Surxondaryo")
+
+city_keyboard = ReplyKeyboardMarkup(
+    [[KeyboardButton("Toshkent"),
+      KeyboardButton("Andijon"),
+      KeyboardButton("Buxoro")
+      ],
+     [KeyboardButton("Toshkent v"),
+      KeyboardButton("Jizzax"),
+      KeyboardButton("Sirdaryo")
+      ],
+     [KeyboardButton("Qashqadaryo"),
+      KeyboardButton("Navoiy"),
+      KeyboardButton("Namangan")
+      ],
+     [KeyboardButton("Surxondaryo"),
+      KeyboardButton("Qoraqalpogʻiston"),
+      KeyboardButton("Samarqand"),
+      ],
+     [KeyboardButton("Fargʻona"),
+      KeyboardButton("Xorazm")
+      ],
+     ], resize_keyboard=True)
 
 
 BOT_TOKEN = os.environ.get("davrabot")

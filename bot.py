@@ -37,6 +37,7 @@ class SetRegBio(StatesGroup):
     user_bio = State()
     gender = State()
     referal = State()
+    city = State()
 
 
 class SetPost(StatesGroup):
@@ -314,7 +315,6 @@ async def remove_account_act(message: types.Message):
 @dp.message_handler(commands=["reg", "registration"])
 async def account_registration_act(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
-        print("BABA")
         collusers.insert_one(
             {
                 "_id": message.from_user.id,
@@ -420,6 +420,13 @@ async def process_set_bio_reg(message: types.Message, state: FSMContext):
         await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
 
 
+@dp.message_handler(commands=["city", "shaxar"])
+async def process_set_city(message: types.Message):
+    await SetRegBio.city.set()
+    keyboard = config.city_keyboard
+    await message.answer("Iltimos, qayerdanligingizni ko'rsating", reply_markup=keyboard)
+
+
 @dp.message_handler(state=SetRegBio.gender)
 async def process_set_gender_reg(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -441,36 +448,26 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
             return True
 
         await message.answer("Ma'lumotlar saqlandi")
-        await state.finish()  # Finished this
-        await menu(message)
-        # await SetRegBio.finding.set()
-        # keyboard = ReplyKeyboardMarkup(
-        #     [[KeyboardButton("👨‍ Yigit kishi"),
-        #       KeyboardButton("👩‍ Ayol kishi"),
-        #       KeyboardButton("👤 Muhim emas")
-        #       ]], resize_keyboard=True, one_time_keyboard=True)
-        # await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
+        # await state.finish()  # Finished this
+        await SetRegBio.city.set()
+        keyboard = config.city_keyboard
+        await message.answer("Iltimos, qayerdanligingizni ko'rsating", reply_markup=keyboard)
 
 
-@dp.message_handler(state=SetRegBio.finding)
-async def process_set_finding_reg(message: types.Message, state: FSMContext):
+@dp.message_handler(state=SetRegBio.city)
+async def process_set_city_reg(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data["finding"] = message.text
-        if data['finding'] == "👨‍ Yigit kishi":
-            collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"finding": "👨‍ Yigit kishi"}})
-        elif data['finding'] == '👩‍ Ayol kishi':
-            collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"finding": "👩‍ Ayol kishi"}
-            })
+        data["city"] = message.text
+        if data['city'] not in config.cities:
+            await message.answer("Iltimos, mavjud shaxarlardan tanlang")
+            await SetRegBio.city.set()
         else:
             collusers.update_one({"_id": message.from_user.id}, {
-                "$set": {"finding": "👤 Muhim emas"}
+                "$set": {"city": data['city']}
             })
-
-        await message.answer("Ma'lumotlar saqlandi")
-        await state.finish()
-        await account_user(message)
+            await message.answer("Ma'lumotlar saqlandi")
+            await state.finish()
+            await menu(message)
 
 
 @dp.message_handler(commands=["search_user", "searchuser"])
@@ -790,7 +787,7 @@ async def all_stats_info(message: types.Message):
     queue_stats = await admin_commands.queue_statistics()
     msg = "Barcha statistika:\n\n" \
           f"     *Users*   \n{user_stats}\n\n" \
-          f"     *Chats* \nAll:{len(chat_all_list)-len(chat_block_list)}\n" \
+          f"     *Chats* \nAll:{len(chat_all_list) - len(chat_block_list)}\n" \
           f"     *Queue's*  \n{queue_stats}"
     await message.answer(msg, parse_mode="MarkdownV2")
 
