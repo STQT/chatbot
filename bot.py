@@ -883,6 +883,9 @@ async def taklif_process(message: types.Message, state: FSMContext):
     elif message.text == "☕️ Suhbatdosh izlash":
         await state.finish()
         await search_user_act(message)
+    elif message.text == "👩 Qizlar izlash":
+        await state.finish()
+        await search_girl_act(message)
     elif message.text == "🗣 Takliflar":
         await state.finish()
         await taklif_user_message(message)
