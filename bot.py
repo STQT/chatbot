@@ -780,6 +780,18 @@ async def delete_chats(message: types.Message):
     await admin_commands.delete_blocked_chats(message)
 
 
+@dp.message_handler(commands=['admin'])
+async def delete_chats(message: types.Message):
+    if message.from_user.id in config.admin_ids:
+        await message.answer("Hozirda mavjud admin komandalar\n"
+                             "/admin - Ushbu xabarni chaqirish\n"
+                             "/stat - Qisqacha statistika\n"
+                             "/all_stats - to'liq statistika\n"
+                             "/post - Foydalanuvchilarga xabarnoma jo'natish")
+    else:
+        await message.answer("Bunday buyruq botda mavjud emas!")
+
+
 @dp.message_handler(commands=['all_stats'])
 async def all_stats_info(message: types.Message):
     user_stats = await admin_commands.user_statistics()
