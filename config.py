@@ -50,6 +50,46 @@ city_keyboard = ReplyKeyboardMarkup(
       ],
      ], resize_keyboard=True)
 
+main_menu_keyboard = ReplyKeyboardMarkup(
+    [
+        [KeyboardButton("☕️ Tasodifiy suhbatdosh")],
+        [KeyboardButton("☕ Anketalardan izlash")],
+        [KeyboardButton("🔖 Anketa"),
+         KeyboardButton("🆘 Yordam")]
+    ],
+    resize_keyboard=True
+)
+
+anketa_keyboard = ReplyKeyboardMarkup(
+    [
+        [
+            KeyboardButton("☕️ Suhbatdosh izlash")],
+        [
+            # KeyboardButton("💣 Anketani o'chirish"),
+            KeyboardButton("✏ Bio"), ],
+        [
+            KeyboardButton("🗣 Do'stlarga ulashish")],
+        [
+            KeyboardButton("🏠 Bosh menyu"), ]
+    ],
+    resize_keyboard=True
+)
+
+
+change_bio_keyboard = ReplyKeyboardMarkup(
+    [
+        [
+            KeyboardButton("✏ Haqimda"),
+            KeyboardButton("✏ Jins")],
+        [
+            KeyboardButton("✏ Kim bilan suxbatlashish?")],
+        [
+            KeyboardButton("✏ Tahallusni o'zgartirish")],
+        [
+            KeyboardButton("🔖 Anketa")]
+    ],
+    resize_keyboard=True
+)
 
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")

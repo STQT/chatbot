@@ -23,6 +23,7 @@ collqueue = cluster.chatbot.queue
 collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
 collrefs = cluster.chatbot.refs
+collprchats = cluster.chatbot.prchats
 
 
 class SetBio(StatesGroup):
@@ -51,37 +52,13 @@ class SetReport(StatesGroup):
 
 @dp.message_handler(commands="main_menu")
 async def menu(message: types.Message or types.CallbackQuery):
-    keyboard = ReplyKeyboardMarkup(
-        [
-            [
-                KeyboardButton("☕️ Suhbatdosh izlash")
-            ],
-            [KeyboardButton("👩 Qizlar izlash")],
-            [
-                # KeyboardButton("🔖 Anketa")
-                KeyboardButton("🗣 Takliflar")
-            ]
-        ],
-        resize_keyboard=True
-    )
+    keyboard = config.main_menu_keyboard
     await bot.send_message(chat_id=message.from_user.id, text="🏠 Bosh menyu", reply_markup=keyboard)
 
 
 @dp.message_handler(commands="start")
 async def start_menu(message: types.Message):
-    keyboard = ReplyKeyboardMarkup(
-        [
-            [
-                KeyboardButton("☕️ Suhbatdosh izlash")
-            ],
-            [KeyboardButton("👩 Qizlar izlash")],
-            [
-                # KeyboardButton("🔖 Anketa")
-                KeyboardButton("🗣 Takliflar")
-            ]
-        ],
-        resize_keyboard=True
-    )
+    keyboard = config.main_menu_keyboard
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
                 collrefs.count_documents({"_id": int(message.text.split()[1])}) == 0:
@@ -112,24 +89,7 @@ async def user_bio(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         await account_user(message)
     else:
-        keyboard = ReplyKeyboardMarkup(
-            [
-                [
-                    KeyboardButton("✏ Haqimda"),
-                    KeyboardButton("✏ Jins")
-                ],
-                [
-                    KeyboardButton("✏ Kim bilan suxbatlashish?"),
-                ],
-                [
-                    KeyboardButton("✏ Tahallusni o'zgartirish"),
-                ],
-                [
-                    KeyboardButton("🔖 Anketa"),
-                ]
-            ],
-            resize_keyboard=True
-        )
+        keyboard = config.change_bio_keyboard
         await message.answer("Qaysi bo'limni o'zgartirishni istaysiz?", reply_markup=keyboard)
 
 
@@ -140,6 +100,27 @@ async def user_bio_change(message: types.Message):
     else:
         await SetBio.user_bio.set()
         await message.answer("Iltimos, qisqacha o'zingiz haqingizda yozing")
+
+
+@dp.message_handler(commands=["search_anketa"])
+async def user_bio_change(message: types.Message):
+    print(message)
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton("✅ Roziman", callback_data=CallbackData(
+                    "choice", "action").new(action="remove")),
+                InlineKeyboardButton("❌ Rozimasman", callback_data=CallbackData(
+                    "choice", "action").new(action="cancel"))
+            ]
+        ],
+    )
+    original = "AgACAgIAAxkBAAIR0GIRXAQpfq7b-jqpz8mUpfnkeBOmAAJ8uTEbcZ-JSMVL_YX7d5drAQADAgADeQADIwQ"
+    another = "AgACAgIAAxkBAAIR12IRXPR-sBrYnXCtITCr3AZM-se3AAJ9uTEbcZ-JSDBOTFGHTSTuAQADAgADeAADIwQ"
+    await message.answer_photo(another,
+                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
+    await message.answer_photo(original,
+                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
 
 
 @dp.message_handler(commands=["jins", "set_gender", "new_gender", "about_gender"])
@@ -164,7 +145,6 @@ async def user_finding(message: types.Message):
         keyboard = ReplyKeyboardMarkup(
             [[KeyboardButton("👨‍ Yigit kishi"),
               KeyboardButton("👩‍ Ayol kishi"),
-              KeyboardButton("👤 Muhim emas")
               ]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Iltimos, kimlar bilan suhbat qurishingizni tanlang", reply_markup=keyboard)
 
@@ -269,25 +249,7 @@ async def account_user(message: types.Message):
                f"📝Bio: {acc.get('bio', None)}\n" \
                f"👫Jins: {acc.get('gender', 'Noaniq')}\n" \
                f"👫Qidiruv: {acc.get('finding', 'Noaniq')}"
-        keyboard = ReplyKeyboardMarkup(
-            [
-                [
-                    KeyboardButton("☕️ Suhbatdosh izlash")
-                ],
-                [
-                    KeyboardButton("💣 Anketani o'chirish"),
-                    KeyboardButton("✏ Bio"),
-                ],
-                [
-                    KeyboardButton("🗣 Do'stlarga ulashish")
-                ],
-                [
-                    KeyboardButton("🏠 Bosh menyu"),
-                ]
-            ],
-            resize_keyboard=True
-        )
-
+        keyboard = config.anketa_keyboard
         await message.answer(text, reply_markup=keyboard)
 
 
@@ -372,14 +334,14 @@ async def process_send_post(message: types.Message, state: FSMContext):
                 data['caption'] = message.caption
                 data['caption_entities'] = message.caption_entities
                 await bot.send_video(chat_id=message.from_user.id, video=message.video,
-                                     caption=message.caption)
+                                     caption=message.caption, caption_entities=message.caption_entities)
             elif message.photo:
                 data['type'] = 'photo'
                 data['photo'] = message.photo[-1].file_id
                 data['caption'] = message.caption
                 data['caption_entities'] = message.caption_entities
                 await bot.send_photo(chat_id=message.from_user.id, photo=message.photo[-1].file_id,
-                                     caption=message.caption)
+                                     caption=message.caption, caption_entities=message.caption_entities)
             elif message.sticker:
                 data['type'] = 'sticker'
                 data['sticker'] = message.sticker.file_id
@@ -388,13 +350,14 @@ async def process_send_post(message: types.Message, state: FSMContext):
                 data['type'] = 'text'
                 data['text'] = message.text
                 data['entities'] = message.entities
-                await bot.send_message(chat_id=message.from_user.id, text=message.text)
+                await bot.send_message(chat_id=message.from_user.id, text=message.text, entities=message.entities)
             elif message.document:
                 data['type'] = 'document'
                 data['document'] = message.document.file_id
                 data['caption'] = message.caption
                 data['caption_entities'] = message.caption_entities
-                await bot.send_document(chat_id=message.from_user.id, document=message.document.file_id)
+                await bot.send_document(chat_id=message.from_user.id, document=message.document.file_id,
+                                        caption_entities=message.caption_entities, caption=message.caption)
             # await state.finish()
             keyboard = ReplyKeyboardMarkup(
                 [[KeyboardButton("☑️Yuborish"), KeyboardButton("☑️Faol emaslarga"),
@@ -705,15 +668,7 @@ async def yes_rep_act(message: types.Message):
             "interlocutor_chat_id"]}, {"$inc": {"reputation": 5}})
         collchats.delete_one({"user_chat_id": message.chat.id})
         collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
-        keyboard = ReplyKeyboardMarkup(
-            [
-                [KeyboardButton("☕️ Suhbatdosh izlash")],
-                [KeyboardButton("👩 Qizlar izlash")],
-                # [KeyboardButton("🔖 Anketa")]
-                [KeyboardButton("🗣 Takliflar")]
-            ],
-            resize_keyboard=True
-        )
+        keyboard = config.main_menu_keyboard
         await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
@@ -727,15 +682,7 @@ async def no_rep_act(message: types.Message):
             "interlocutor_chat_id"]}, {"$inc": {"reputation": -5}})
         collchats.delete_one({"user_chat_id": message.chat.id})
         collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
-        keyboard = ReplyKeyboardMarkup(
-            [
-                [KeyboardButton("☕️ Suhbatdosh izlash")],
-                # [KeyboardButton("🔖 Anketa")]
-                [KeyboardButton("👩 Qizlar izlash")],
-                [KeyboardButton("🗣 Takliflar")]
-            ],
-            resize_keyboard=True
-        )
+        keyboard = config.main_menu_keyboard
         await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
@@ -749,14 +696,7 @@ async def report_rep_act(message: types.Message):
             "interlocutor_chat_id"]}, {"$inc": {"reputation": -25}})
         collchats.delete_one({"user_chat_id": message.chat.id})
         collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
-        keyboard = ReplyKeyboardMarkup(
-            [
-                [KeyboardButton("☕️ Suhbatdosh izlash")],
-                # [KeyboardButton("🔖 Anketa")]
-                [KeyboardButton("🗣 Takliflar")]
-            ],
-            resize_keyboard=True
-        )
+        keyboard = config.main_menu_keyboard
         await message.answer("Shikoyatingiz qabul qilindi!☺️", reply_markup=keyboard)
     else:
         await message.answer("Siz suhbatdosh bilan yozishmayapsiz")
@@ -927,13 +867,10 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
+    print(message)
     chat = collchats.find_one({"user_chat_id": message.chat.id})
     if message.text == "🗣 Takliflar":
         await taklif_user_message(message)
-    # if message.text == "📝 Ro'yxatdan o'tish":
-    #     await account_registration_act(message)
-    # elif message.text == "🔖 Anketa":
-    #     await account_user(message)
     elif message.text == "🗣 Do'stlarga ulashish":
         await referal_link(message)
     elif message.text == "🏠 Bosh menyu":
@@ -942,38 +879,28 @@ async def some_text(message: types.Message):
     #     await remove_account_act(message)
     elif message.text == "☕️ Suhbatdosh izlash":
         await search_user_act(message)
-    elif message.text == "👩 Qizlar izlash":
-        await search_girl_act(message)
-    elif message.text == "📛 Izlashni to'xtatish":
-        await stop_search_act(message)
-    # :TODO next day remove commands
     elif message.text == "📝 Ro'yxatdan o'tish":
-        await menu(message)
+        await account_registration_act(message)
     elif message.text == "🔖 Anketa":
+        await account_user(message)
+    elif message.text == "🗣 Do'stlarga ulashish":
+        await referal_link(message)
+    elif message.text == "🏠 Bosh menyu":
         await menu(message)
     elif message.text == "💣 Anketani o'chirish":
-        await menu(message)
+        await remove_account_act(message)
+    elif message.text == "☕️ Suhbatdosh izlash":
+        await search_user_act(message)
+    elif message.text == "📛 Izlashni to'xtatish":
+        await stop_search_act(message)
     elif message.text == "✏ Jins":
-        await menu(message)
+        await user_gender(message)
     elif message.text == "✏ Kim bilan suxbatlashish?":
-        await menu(message)
+        await user_finding(message)
     elif message.text == "✏ Tahallusni o'zgartirish":
-        await menu(message)
+        await user_tahallus(message)
     elif message.text == "✏ Bio":
-        await menu(message)
-    elif message.text == "✏ Haqimda":
-        await menu(message)
-    elif message.text == "✏ Jins":
-        await menu(message)
-    elif message.text == "✏ Kim bilan suxbatlashish?":
-        await menu(message)
-    elif message.text == "✏ Tahallusni o'zgartirish":
-        await menu(message)
-    elif message.text == "✏ Bio":
-        await menu(message)
-    elif message.text == "✏ Haqimda":
-        await menu(message)
-    # TODO this
+        await user_bio(message)
     elif message.text == "💔 Suhbatni yakunlash":
         await leave_from_chat_act(message)
     elif message.text == "👍 Ha":
