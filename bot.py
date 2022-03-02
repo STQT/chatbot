@@ -102,27 +102,6 @@ async def user_bio_change(message: types.Message):
         await message.answer("Iltimos, qisqacha o'zingiz haqingizda yozing")
 
 
-@dp.message_handler(commands=["search_anketa"])
-async def user_bio_change(message: types.Message):
-    print(message)
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton("✅ Roziman", callback_data=CallbackData(
-                    "choice", "action").new(action="remove")),
-                InlineKeyboardButton("❌ Rozimasman", callback_data=CallbackData(
-                    "choice", "action").new(action="cancel"))
-            ]
-        ],
-    )
-    original = "AgACAgIAAxkBAAIR0GIRXAQpfq7b-jqpz8mUpfnkeBOmAAJ8uTEbcZ-JSMVL_YX7d5drAQADAgADeQADIwQ"
-    another = "AgACAgIAAxkBAAIR12IRXPR-sBrYnXCtITCr3AZM-se3AAJ9uTEbcZ-JSDBOTFGHTSTuAQADAgADeAADIwQ"
-    await message.answer_photo(another,
-                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
-    await message.answer_photo(original,
-                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
-
-
 @dp.message_handler(commands=["jins", "set_gender", "new_gender", "about_gender"])
 async def user_gender(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
