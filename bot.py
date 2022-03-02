@@ -24,6 +24,11 @@ collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
 collrefs = cluster.chatbot.refs
 collprchats = cluster.chatbot.prchats
+collprchatsqueue = cluster.chatbot.prchatsque
+colladmin = cluster.chatbot.admin
+
+DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAITqGIew5l9urIIwGU7iZLrOEUx9hr-AAJxuDEbcZ-RSFXnfstWYLFnAQADAgADeAADIwQ"
+DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAITqWIexFq5TNKFQSgs2BSrnUgZITF7AAJ9uTEbcZ-JSDBOTFGHTSTuAQADAgADeAADIwQ"
 
 
 class SetBio(StatesGroup):
@@ -48,6 +53,60 @@ class SetPost(StatesGroup):
 
 class SetReport(StatesGroup):
     report = State()
+
+
+class Anketa(StatesGroup):
+    message_id = State()
+
+
+async def send_reaction_func(user_id: int, data: str):
+    action, tg_id = data.split(":")
+    if action == "yes":
+        print("HAHAHAHA")
+        try:
+            await bot.send_message(int(tg_id), "BLABLA")
+            collprchatsqueue.insert_one({
+                "sender": user_id,
+                "accepter": int(tg_id),
+                "like": True
+            })
+        except Exception as e:
+            logging.error(f"Error: {e}")
+            await admin_commands.user_blocked_with_posting(int(tg_id))
+
+    else:
+        collprchatsqueue.insert_one({
+            "sender": user_id,
+            "accepter": int(tg_id),
+            "like": False
+        })
+        print("NONONONO")
+
+
+async def search_random_anketa(user_id: int):
+    acc = collusers.find_one({"_id": user_id})
+    liked_user_list = [user_id, ]
+    for i in collprchatsqueue.find({"sender": user_id}):
+        liked_user_list.append(i["accepter"])
+    if acc.get("gender", None) == "👩‍ Ayol kishi":
+        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
+                                       "gender": {"$nin": ["👩‍ Ayol kishi"]},
+                                       "status": {"$nin": [False]}})
+    else:
+        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
+                                       "gender": {"$in": ["👩‍ Ayol kishi"]},
+                                       "status": {"$nin": [False]}})
+    return find_doc
+
+
+async def send_new_anketa(user_id: int):
+    find_doc = await search_random_anketa(user_id) # noqa
+    text = "Foydalanuvchi: {}\n" \
+           "Bio: {} \n".format(find_doc.get("nickname", "Noma'lum"), find_doc.get("bio", "Noma'lum"))
+    photo = find_doc.get("photo", None)
+    if not photo:
+        photo = DEFAULT_WOMAN_PHOTO if find_doc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+    return text, photo
 
 
 @dp.message_handler(commands="main_menu")
@@ -103,24 +162,10 @@ async def user_bio_change(message: types.Message):
 
 
 @dp.message_handler(commands=["search_anketa"])
-async def user_bio_change(message: types.Message):
-    print(message)
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton("✅ Roziman", callback_data=CallbackData(
-                    "choice", "action").new(action="remove")),
-                InlineKeyboardButton("❌ Rozimasman", callback_data=CallbackData(
-                    "choice", "action").new(action="cancel"))
-            ]
-        ],
-    )
-    original = "AgACAgIAAxkBAAIR0GIRXAQpfq7b-jqpz8mUpfnkeBOmAAJ8uTEbcZ-JSMVL_YX7d5drAQADAgADeQADIwQ"
-    another = "AgACAgIAAxkBAAIR12IRXPR-sBrYnXCtITCr3AZM-se3AAJ9uTEbcZ-JSDBOTFGHTSTuAQADAgADeAADIwQ"
-    await message.answer_photo(another,
-                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
-    await message.answer_photo(original,
-                               reply_markup=keyboard, caption="TEXT TEXT TEXT TEXT TEXT")
+async def search_anketa(message: types.Message):
+    keyboard = await config.like_keyboard(status=True, user_id=message.from_user.id)
+    text, photo = await send_new_anketa(message.from_user.id)
+    await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["jins", "set_gender", "new_gender", "about_gender"])
@@ -304,6 +349,12 @@ async def send_post_act(message: types.Message):
 
 @dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document", "video"])
 async def process_send_post(message: types.Message, state: FSMContext):
+    print("MAIN", state.user, await state.get_data(), state.chat)
+    print(dir(state))
+    print(dir(state.storage), "STATE")
+    print(await state.storage.get_data(chat=390736292, user=390736292), "STATE")
+    x = await state.get_data()
+    print("DUDU", "\n", x, "\n", state.chat, "\n", state.user, state.storage)
     if message.text == "☑️Yuborish":
         data = await state.get_data()
         users = await admin_commands.get_all_active_users()
@@ -782,7 +833,8 @@ async def leave_from_chat_act(message: types.Message):
 
 @dp.message_handler(commands=["report"])
 async def taklif_user_message(message):
-    await SetReport.report.set()
+    x = await SetReport.report.set()
+    print(x)
     await message.answer("Bizga o'z takliflaringizni yuboring!")
 
 
@@ -867,17 +919,23 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
-    print(message)
-    chat = collchats.find_one({"user_chat_id": message.chat.id})
-    if message.text == "🗣 Takliflar":
+    # chat = collchats.find_one({"user_chat_id": message.chat.id})
+    # print(chat)
+    print(message.text)
+    if message.photo:
+        print(message)
+    if message.text == "☕ Anketalardan izlash":
+        print("HEEE")
+        await search_anketa(message)
+    elif message.text == "🗣 Takliflar":
         await taklif_user_message(message)
     elif message.text == "🗣 Do'stlarga ulashish":
         await referal_link(message)
     elif message.text == "🏠 Bosh menyu":
         await menu(message)
-    # elif message.text == "💣 Anketani o'chirish":
+    # eliлf message.text == "💣 Anketani o'chirish":
     #     await remove_account_act(message)
-    elif message.text == "☕️ Suhbatdosh izlash":
+    elif message.text == "☕️ Tasodifiy suhbatdosh":
         await search_user_act(message)
     elif message.text == "📝 Ro'yxatdan o'tish":
         await account_registration_act(message)
@@ -909,62 +967,62 @@ async def some_text(message: types.Message):
         await no_rep_act(message)
     elif message.text == "🗣 Shikoyat berish":
         await report_rep_act(message)
-    elif chat:
-        if message.content_type == "text":
-            try:
-                await bot.send_message(
-                    chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                    text=message.text, entities=message.entities)
-            except (BotKicked, BotBlocked, UserDeactivated):
-                await admin_commands.user_are_blocked_bot(message)
-        elif chat.get("status", True):
-            if message.content_type == "sticker":
-                try:
-                    await bot.send_sticker(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        sticker=message.sticker["file_id"])
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-            elif message.content_type == "photo":
-                try:
-                    await bot.send_photo(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        photo=message.photo[len(message.photo) - 1].file_id)
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-            elif message.content_type == "voice":
-                try:
-                    await bot.send_voice(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        voice=message.voice["file_id"])
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-            elif message.content_type == "document":
-                try:
-                    await bot.send_document(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        document=message.document["file_id"])
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-            elif message.content_type == "video":
-                try:
-                    await bot.send_video(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        video=message.video["file_id"])
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-            elif message.content_type == "video_note":
-                try:
-                    await bot.send_video_note(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-                        video_note=message.video_note["file_id"])
-                except (BotKicked, BotBlocked, UserDeactivated):
-                    await admin_commands.user_are_blocked_bot(message)
-        else:
-            keyboard = ReplyKeyboardMarkup(
-                [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")],
-                 [KeyboardButton("🗣 Shikoyat berish")]], resize_keyboard=True)
-            await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
+    # elif chat:
+    #     if message.content_type == "text":
+    #         try:
+    #             await bot.send_message(
+    #                 chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                 text=message.text, entities=message.entities)
+    #         except (BotKicked, BotBlocked, UserDeactivated):
+    #             await admin_commands.user_are_blocked_bot(message)
+    #     elif chat.get("status", True):
+    #         if message.content_type == "sticker":
+    #             try:
+    #                 await bot.send_sticker(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     sticker=message.sticker["file_id"])
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #         elif message.content_type == "photo":
+    #             try:
+    #                 await bot.send_photo(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     photo=message.photo[len(message.photo) - 1].file_id)
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #         elif message.content_type == "voice":
+    #             try:
+    #                 await bot.send_voice(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     voice=message.voice["file_id"])
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #         elif message.content_type == "document":
+    #             try:
+    #                 await bot.send_document(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     document=message.document["file_id"])
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #         elif message.content_type == "video":
+    #             try:
+    #                 await bot.send_video(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     video=message.video["file_id"])
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #         elif message.content_type == "video_note":
+    #             try:
+    #                 await bot.send_video_note(
+    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+    #                     video_note=message.video_note["file_id"])
+    #             except (BotKicked, BotBlocked, UserDeactivated):
+    #                 await admin_commands.user_are_blocked_bot(message)
+    #     else:
+    #         keyboard = ReplyKeyboardMarkup(
+    #             [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")],
+    #              [KeyboardButton("🗣 Shikoyat berish")]], resize_keyboard=True)
+    #         await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
 
 
 @dp.callback_query_handler(text_contains="remove")
@@ -986,6 +1044,33 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
         await menu(callback_query)
     else:
         await callback_query.answer(text="A'zo bo'lmadingiz!", show_alert=True)
+
+
+@dp.callback_query_handler(text_contains="liked")
+async def liked_callback(callback: types.CallbackQuery):
+    await callback.answer("Allaqachon ovoz bergansiz!")
+
+
+@dp.callback_query_handler(text_contains="yes")
+async def yes_callback(callback: types.CallbackQuery):
+    old_keyboard = await config.like_keyboard(status=False, user_id=callback.from_user.id)
+    new_keyboard = await config.like_keyboard(status=True, user_id=callback.from_user.id)
+    await send_reaction_func(user_id=callback.from_user.id, data=callback.data)
+    await callback.answer("Yuborildi!")
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    text, photo = await send_new_anketa(callback.from_user.id)
+    await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+
+
+@dp.callback_query_handler(text_contains="no")
+async def no_callback(callback: types.CallbackQuery):
+    old_keyboard = await config.like_keyboard(status=False, user_id=callback.from_user.id)
+    new_keyboard = await config.like_keyboard(status=True, user_id=callback.from_user.id)
+    await send_reaction_func(user_id=callback.from_user.id, data=callback.data)
+    await callback.answer("Keyingisi!")
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    text, photo = await send_new_anketa(callback.from_user.id)
+    await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
 
 
 if __name__ == "__main__":

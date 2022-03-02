@@ -2,7 +2,8 @@ import logging
 import datetime
 import os
 
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.callback_data import CallbackData
 
 formatter = '[%(asctime)s] %(levelname)8s --- %(message)s (%(filename)s:%(lineno)s)'
 logging.basicConfig(
@@ -16,10 +17,10 @@ logging.basicConfig(
 admin_ids = 256665985, 390736292, 531409948, 556739283
 group_id = -650304675
 channel_urls_dict = ({
-    "title": "Мозийга бир назар",
-    "link": "https://t.me/+ZwCfAKCjmeFkNmNi",
-    "username": "@moziy_nazar"
-},
+                         "title": "Мозийга бир назар",
+                         "link": "https://t.me/+ZwCfAKCjmeFkNmNi",
+                         "username": "@moziy_nazar"
+                     },
 )
 
 cities = ("Toshkent", "Andijon", "Buxoro",
@@ -75,7 +76,6 @@ anketa_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
-
 change_bio_keyboard = ReplyKeyboardMarkup(
     [
         [
@@ -90,6 +90,32 @@ change_bio_keyboard = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True
 )
+
+
+async def like_keyboard(status: bool, user_id: int):
+    if status:  # if Unreaction keyboard
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton("👍", callback_data=CallbackData(
+                        "yes", "action").new(action=str(user_id))),
+                    InlineKeyboardButton("👎", callback_data=CallbackData(
+                        "no", "action").new(action=str(user_id)))
+                ]
+            ],
+        )
+    else:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton("👍", callback_data=CallbackData(
+                        "liked", "action").new(action="liked")),
+                    InlineKeyboardButton("👎", callback_data=CallbackData(
+                        "liked", "action").new(action="liked"))
+                ]
+            ],
+        )
+
 
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
