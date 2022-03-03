@@ -92,8 +92,8 @@ change_bio_keyboard = ReplyKeyboardMarkup(
 )
 
 
-async def like_keyboard(status: bool, user_id: int):
-    if status:  # if Unreaction keyboard
+async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboardMarkup:
+    if new:  # if Unreaction keyboard
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [

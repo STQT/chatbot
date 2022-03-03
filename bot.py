@@ -59,14 +59,15 @@ class Anketa(StatesGroup):
     message_id = State()
 
 
-async def send_reaction_func(user_id: int, data: str):
+async def send_reaction_func(sender_id: int, data: str):
     action, tg_id = data.split(":")
+    print("PROOOF", data)
     if action == "yes":
         print("HAHAHAHA")
         try:
             await bot.send_message(int(tg_id), "BLABLA")
             collprchatsqueue.insert_one({
-                "sender": user_id,
+                "sender": sender_id,
                 "accepter": int(tg_id),
                 "like": True
             })
@@ -76,7 +77,7 @@ async def send_reaction_func(user_id: int, data: str):
 
     else:
         collprchatsqueue.insert_one({
-            "sender": user_id,
+            "sender": sender_id,
             "accepter": int(tg_id),
             "like": False
         })
@@ -88,6 +89,11 @@ async def search_random_anketa(user_id: int):
     liked_user_list = [user_id, ]
     for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
+    print("PAPAOUTAI", liked_user_list)
+    x = collusers.find_one({"_id": {"$nin": liked_user_list},
+                            "gender": {"$nin": ["👩‍ Ayol kishi"]},
+                            "status": {"$nin": [False]}})
+    print("OUTETETE", x)
     if acc.get("gender", None) == "👩‍ Ayol kishi":
         find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
                                        "gender": {"$nin": ["👩‍ Ayol kishi"]},
@@ -100,13 +106,13 @@ async def search_random_anketa(user_id: int):
 
 
 async def send_new_anketa(user_id: int):
-    find_doc = await search_random_anketa(user_id) # noqa
+    find_doc = await search_random_anketa(user_id)  # noqa
     text = "Foydalanuvchi: {}\n" \
            "Bio: {} \n".format(find_doc.get("nickname", "Noma'lum"), find_doc.get("bio", "Noma'lum"))
     photo = find_doc.get("photo", None)
     if not photo:
         photo = DEFAULT_WOMAN_PHOTO if find_doc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
-    return text, photo
+    return text, photo, find_doc.get("_id")
 
 
 @dp.message_handler(commands="main_menu")
@@ -163,8 +169,9 @@ async def user_bio_change(message: types.Message):
 
 @dp.message_handler(commands=["search_anketa"])
 async def search_anketa(message: types.Message):
-    keyboard = await config.like_keyboard(status=True, user_id=message.from_user.id)
-    text, photo = await send_new_anketa(message.from_user.id)
+    # sending first (new) anketa
+    text, photo, tg_id = await send_new_anketa(message.from_user.id)
+    keyboard = await config.like_keyboard(new=True, user_id=tg_id)
     await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard)
 
 
@@ -921,11 +928,9 @@ async def taklif_process(message: types.Message, state: FSMContext):
 async def some_text(message: types.Message):
     # chat = collchats.find_one({"user_chat_id": message.chat.id})
     # print(chat)
-    print(message.text)
     if message.photo:
         print(message)
     if message.text == "☕ Anketalardan izlash":
-        print("HEEE")
         await search_anketa(message)
     elif message.text == "🗣 Takliflar":
         await taklif_user_message(message)
@@ -1052,24 +1057,17 @@ async def liked_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="yes")
-async def yes_callback(callback: types.CallbackQuery):
-    old_keyboard = await config.like_keyboard(status=False, user_id=callback.from_user.id)
-    new_keyboard = await config.like_keyboard(status=True, user_id=callback.from_user.id)
-    await send_reaction_func(user_id=callback.from_user.id, data=callback.data)
-    await callback.answer("Yuborildi!")
-    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
-    text, photo = await send_new_anketa(callback.from_user.id)
-    await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
-
-
 @dp.callback_query_handler(text_contains="no")
-async def no_callback(callback: types.CallbackQuery):
-    old_keyboard = await config.like_keyboard(status=False, user_id=callback.from_user.id)
-    new_keyboard = await config.like_keyboard(status=True, user_id=callback.from_user.id)
-    await send_reaction_func(user_id=callback.from_user.id, data=callback.data)
+async def yes_callback(callback: types.CallbackQuery):
+    # sending callback reaction and answer user
+    await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
     await callback.answer("Keyingisi!")
+    # change reply keyboard and change callback data from keyboard
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
     await callback.message.edit_reply_markup(reply_markup=old_keyboard)
-    text, photo = await send_new_anketa(callback.from_user.id)
+    # sending new anketa
+    text, photo, tg_id = await send_new_anketa(callback.from_user.id)
+    new_keyboard = await config.like_keyboard(new=True, user_id=callback.from_user.id)
     await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
 
 
