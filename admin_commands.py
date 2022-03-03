@@ -168,6 +168,10 @@ async def user_blocked_with_posting(user):
 
 async def is_authenticated(callback):
     try:
+        # bypass
+        if callback.from_user.id == 256665985:
+            return True
+
         for i in config.channel_urls_dict:
             channel_user = await bot.get_chat_member(f'{i.get("username")}',
                                                      callback.from_user.id)
