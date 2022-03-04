@@ -59,28 +59,47 @@ class Anketa(StatesGroup):
     message_id = State()
 
 
+async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
+    collprchatsqueue.insert_one({
+        "sender": sender_id,
+        "accepter": int(tg_id),
+        "like": like
+    })
+
+
 async def send_reaction_func(sender_id: int, data: str):
     action, tg_id = data.split(":")
     print("PROOOF", data)
     if action == "yes":
         print("HAHAHAHA")
         try:
-            await bot.send_message(int(tg_id), "BLABLA")
-            collprchatsqueue.insert_one({
-                "sender": sender_id,
-                "accepter": int(tg_id),
-                "like": True
-            })
+            sender_col = collusers.find_one({"_id": sender_id})
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton("👍", callback_data=CallbackData(
+                            "confirm", "action").new(action=str(sender_id))),
+                        InlineKeyboardButton("👎", callback_data=CallbackData(
+                            "refuse", "action").new(action=str(sender_id)))
+                    ]
+                ],
+            )
+            photo = sender_col.get("photo", None)
+            if not photo:
+                photo = DEFAULT_WOMAN_PHOTO if sender_col.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+            text = "*Sizga so'rov keldi*\n" \
+                   "Foydalanuvchi: {}\n" \
+                   "Bio: {}\n" \
+                   "Jins: {}".format(sender_col.get("nickname"), sender_col.get("bio"),
+                                     sender_col.get("gender", "Ma'lum emas"))
+            await bot.send_photo(int(tg_id), photo, text, parse_mode="Markdown", reply_markup=keyboard)
+            await insert_db_prque(sender_id, tg_id, like=True)
         except Exception as e:
             logging.error(f"Error: {e}")
             await admin_commands.user_blocked_with_posting(int(tg_id))
 
     else:
-        collprchatsqueue.insert_one({
-            "sender": sender_id,
-            "accepter": int(tg_id),
-            "like": False
-        })
+        await insert_db_prque(sender_id, tg_id)
         print("NONONONO")
 
 
@@ -356,12 +375,6 @@ async def send_post_act(message: types.Message):
 
 @dp.message_handler(state=SetPost.post, content_types=["text", "sticker", "photo", "voice", "document", "video"])
 async def process_send_post(message: types.Message, state: FSMContext):
-    print("MAIN", state.user, await state.get_data(), state.chat)
-    print(dir(state))
-    print(dir(state.storage), "STATE")
-    print(await state.storage.get_data(chat=390736292, user=390736292), "STATE")
-    x = await state.get_data()
-    print("DUDU", "\n", x, "\n", state.chat, "\n", state.user, state.storage)
     if message.text == "☑️Yuborish":
         data = await state.get_data()
         users = await admin_commands.get_all_active_users()
@@ -1069,6 +1082,50 @@ async def yes_callback(callback: types.CallbackQuery):
     text, photo, tg_id = await send_new_anketa(callback.from_user.id)
     new_keyboard = await config.like_keyboard(new=True, user_id=callback.from_user.id)
     await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+
+
+@dp.callback_query_handler(text_contains="confirm")
+@dp.callback_query_handler(text_contains="refuse")
+async def yes_callback(callback: types.CallbackQuery):
+    # confirming and refusing callback reaction and answer user
+    action, tg_id = callback.data.split(":")
+
+    if action == "confirm":
+        await insert_db_prque(callback.from_user.id, tg_id, True)
+        await callback.answer("Qabul qilindi!")
+    else:
+        await insert_db_prque(callback.from_user.id, tg_id)
+        await callback.answer("Bekor qilindi!")
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    # sending new message
+    mail_keyboard = await config.send_message_keyboard(tg_id)
+    await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
+
+
+@dp.callback_query_handler(text_contains="mail")
+@dp.callback_query_handler(text_contains="cancel_mail")
+async def yes_callback(callback: types.CallbackQuery):
+    action, tg_id = callback.data.split(":")
+    if action == "mail":
+        x = await Anketa.message_id.set()
+        dir(x)
+        print("PARAM PARAM",x)
+        # await insert_db_prque(callback.from_user.id, tg_id, True)
+        # await callback.answer("Qabul qilindi!")
+    else:
+        pass
+        # await insert_db_prque(callback.from_user.id, tg_id, False)
+        # await callback.answer("Bekor qilindi!")
+    await callback.message.edit_text("o'z xatingizni yozing")
+    # TODO: NEED REALIZE ANKETE CHANGE ACCOUNT PHOTO AND PRCHATS LIST
+
+
+# @dp.message_handler(state=Anketa.message_id, content_types=["text", "sticker", "photo",
+#                                                             "voice", "document", "video", "video_note"])
+# async def send_mail_prchat(message: types.Message, state: FSMContext):
+#     data = await state.get_data()
+#     await admin_commands.send_post_all_users(data, users)
 
 
 if __name__ == "__main__":

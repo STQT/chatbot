@@ -117,5 +117,16 @@ async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboar
         )
 
 
+async def send_message_keyboard(user_id: str = None) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton("📤", callback_data=CallbackData(
+                    "mail", "action").new(action=user_id))
+            ]
+        ],
+    )
+
+
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
