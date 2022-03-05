@@ -441,8 +441,12 @@ async def account_registration_act(message: types.Message):
                 "bio": "Tarmoqdagi foydalanuvchilardan biri",
             }
         )
-        await SetRegBio.user_bio.set()
-        await message.answer(f"Salom, {message.from_user.username}\nO'zingiz haqingizda yozing")
+        await SetRegBio.gender.set()
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("👨‍ Yigit kishi"),
+              KeyboardButton("👩‍ Ayol kishi"),
+              ]], resize_keyboard=True, one_time_keyboard=True)
+        await message.answer(f"Salom, {message.from_user.full_name}\nJinsingiz?", reply_markup=keyboard)
     else:
         await message.answer("Siz tizimda allaqachon anketa yaratgansiz 😉")
         await account_user(message)
@@ -493,14 +497,11 @@ async def process_set_bio_reg(message: types.Message, state: FSMContext):
         collusers.update_one({"_id": message.from_user.id}, {
             "$set": {"bio": data["user_bio"]}})
 
-        await message.answer("Ma'lumotlar saqlandi")
+        # await message.answer("Ma'lumotlar saqlandi")
         # await state.finish()
-        await SetRegBio.gender.set()
-        keyboard = ReplyKeyboardMarkup(
-            [[KeyboardButton("👨‍ Yigit kishi"),
-              KeyboardButton("👩‍ Ayol kishi"),
-              ]], resize_keyboard=True, one_time_keyboard=True)
-        await message.answer("Iltimos, jinsingizni tanlang", reply_markup=keyboard)
+        await SetRegBio.city.set()
+        keyboard = config.city_keyboard
+        await message.answer("Iltimos, qayerdanligingizni ko'rsating", reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["city", "shaxar"])
@@ -530,11 +531,10 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
             await message.answer("Noto'g'ri kiritdingiz", reply_markup=keyboard)
             return True
 
-        await message.answer("Ma'lumotlar saqlandi")
+        # await message.answer("Ma'lumotlar saqlandi")
         # await state.finish()  # Finished this
-        await SetRegBio.city.set()
-        keyboard = config.city_keyboard
-        await message.answer("Iltimos, qayerdanligingizni ko'rsating", reply_markup=keyboard)
+        await SetRegBio.user_bio.set()
+        await message.answer(f"Iltimos o'zingiz haqingizda qisqacha ma'lumot bering")
 
 
 @dp.message_handler(state=SetRegBio.city)
