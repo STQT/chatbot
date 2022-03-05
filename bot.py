@@ -1122,9 +1122,25 @@ async def liked_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="yes")
+async def yes_callback(callback: types.CallbackQuery):
+    # sending callback reaction and answer user # noqa
+    await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
+    await callback.answer("Keyingisi!")
+    # change reply keyboard and change callback data from keyboard
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    # sending new anketa
+    text, photo, tg_id = await send_new_anketa(callback.from_user.id)
+    if tg_id:
+        new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
+        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+    else:
+        await callback.message.answer_photo(photo=photo, caption=text)
+
+
 @dp.callback_query_handler(text_contains="no")
 async def yes_callback(callback: types.CallbackQuery):
-    # sending callback reaction and answer user
+    # sending callback reaction and answer user # noqa
     await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
     await callback.answer("Keyingisi!")
     # change reply keyboard and change callback data from keyboard
@@ -1140,36 +1156,41 @@ async def yes_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="confirm")
+async def confirm_callback(callback: types.CallbackQuery):
+    # confirming and refusing callback reaction and answer user
+    action, tg_id = callback.data.split(":")
+    # insert db prqueue query
+    await insert_db_prque(callback.from_user.id, tg_id, True)
+    # insert db prchat query
+    await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
+    await callback.answer("Qabul qilindi!")
+    # sending new message
+    mail_keyboard = await config.send_mail_keyboard(tg_id)
+    another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
+    await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
+    # sending confirmation text from another user
+    acc = collusers.find_one({"_id": callback.from_user.id})
+    photo = acc.get("photo", None)
+    if not photo:
+        photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+    text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
+           "Foydalanuvchi: {}\n" \
+           "Bio: {}\n" \
+           "Jins: {}\n" \
+           "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
+                                       acc.get("gender", "Ma'lum emas"))
+    await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
+                         reply_markup=another_user_mail_keyboard)
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+
+
 @dp.callback_query_handler(text_contains="refuse")
 async def confirm_callback(callback: types.CallbackQuery):
     # confirming and refusing callback reaction and answer user
     action, tg_id = callback.data.split(":")
-    if action == "confirm":
-        # insert db prqueue query
-        await insert_db_prque(callback.from_user.id, tg_id, True)
-        # insert db prchat query
-        await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
-        await callback.answer("Qabul qilindi!")
-        # sending new message
-        mail_keyboard = await config.send_mail_keyboard(tg_id)
-        another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
-        await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
-        # sending confirmation text from another user
-        acc = collusers.find_one({"_id": callback.from_user.id})
-        photo = acc.get("photo", None)
-        if not photo:
-            photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
-        text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
-               "Foydalanuvchi: {}\n" \
-               "Bio: {}\n" \
-               "Jins: {}\n" \
-               "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
-                                           acc.get("gender", "Ma'lum emas"))
-        await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
-                             reply_markup=another_user_mail_keyboard)
-    else:
-        await insert_db_prque(callback.from_user.id, tg_id)
-        await callback.answer("Bekor qilindi!")
+    await insert_db_prque(callback.from_user.id, tg_id)
+    await callback.answer("Bekor qilindi!")
     old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
     await callback.message.edit_reply_markup(reply_markup=old_keyboard)
 
