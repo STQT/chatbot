@@ -120,15 +120,23 @@ async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboar
         )
 
 
-async def send_mail_keyboard(user_id: str = None) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
+async def send_mail_keyboard(user_id: str = None, cancel: bool = False) -> (InlineKeyboardMarkup, ReplyKeyboardMarkup):
+    if cancel:
+        return ReplyKeyboardMarkup(
             [
-                InlineKeyboardButton("📤", callback_data=CallbackData(
-                    "mail", "action").new(action=user_id))
-            ]
-        ],
-    )
+                [KeyboardButton("🚫 Bekor qilish")],
+            ],
+            resize_keyboard=True
+        )
+    else:
+        return InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton("📤", callback_data=CallbackData(
+                        "mail", "action").new(action=user_id))
+                ]
+            ],
+        )
 
 
 async def get_message_data_for_fsm(message: types.Message, data: FSMContext.proxy):

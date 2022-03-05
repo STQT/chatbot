@@ -27,8 +27,8 @@ collprchats = cluster.chatbot.prchats
 collprchatsqueue = cluster.chatbot.prchatsque
 colladmin = cluster.chatbot.admin
 
-DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAITqGIew5l9urIIwGU7iZLrOEUx9hr-AAJxuDEbcZ-RSFXnfstWYLFnAQADAgADeAADIwQ"
-DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAITqWIexFq5TNKFQSgs2BSrnUgZITF7AAJ9uTEbcZ-JSDBOTFGHTSTuAQADAgADeAADIwQ"
+DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAIWbWIjZw-DTOPvYIGf4sN_oxE9MpKoAAIuujEbaNIZSc0xIx-Oj2ddAQADAgADbQADIwQ"
+DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAIWa2IjZvFsAAGpuka9onRqCTiyBo5smwACMLoxG2jSGUn8QRYKtObqtQEAAwIAA20AAyME"
 
 
 class SetBio(StatesGroup):
@@ -105,11 +105,13 @@ async def send_reaction_func(sender_id: int, data: str):
 async def search_random_anketa(user_id: int):
     acc = collusers.find_one({"_id": user_id})
     liked_user_list = [user_id, ]
+
     for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
-    x = collusers.find_one({"_id": {"$nin": liked_user_list},
-                            "gender": {"$nin": ["👩‍ Ayol kishi"]},
-                            "status": {"$nin": [False]}})
+    print(liked_user_list)
+    # x = collusers.find_one({"_id": {"$nin": liked_user_list},
+    #                         "gender": {"$nin": ["👩‍ Ayol kishi"]},
+    #                         "status": {"$nin": [False]}})
     if acc.get("gender", None) == "👩‍ Ayol kishi":
         find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
                                        "gender": {"$nin": ["👩‍ Ayol kishi"]},
@@ -123,16 +125,18 @@ async def search_random_anketa(user_id: int):
 
 async def send_new_anketa(user_id: int):
     find_doc = await search_random_anketa(user_id)  # noqa
+    print(find_doc)
     if find_doc:
-        text = f"Foydalanuvchi: {find_doc.get('nickname', 'Nomalum')}\n" \
-               f"Bio: {find_doc.get('bio', 'Nomalum')}"
+        text = "Foydalanuvchi: {}\n" \
+               "Bio: {}\n" \
+               "Jins: {}".format(find_doc.get("nickname"), find_doc.get("bio"),
+                                 find_doc.get("gender", "Ma'lum emas"))
         photo = find_doc.get("photo", None)
         if not photo:
             photo = DEFAULT_WOMAN_PHOTO if find_doc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
         return text, photo, find_doc.get("_id")
     else:
-        return "Hech qanday foydalanuvchi mavjud emas", \
-               DEFAULT_MAN_PHOTO, None
+        return "Hech qanday foydalanuvchi mavjud emas", DEFAULT_MAN_PHOTO, None
 
 
 async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: bool = True, nickname: str = None):
@@ -142,8 +146,8 @@ async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: boo
         user_nickname = "Foydalanuvchi *{}* dan xat:\n".format(nickname)
         reply = await config.send_mail_keyboard(message.from_user.id)
     if message.text:
-        await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text), entities=message.entities,
-                               reply_markup=reply, parse_mode="Markdown")
+        await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text) if user_nickname else message.text,
+                               entities=message.entities, reply_markup=reply, parse_mode="Markdown")
     elif message.voice:
         await bot.send_voice(chat_id=tg_id, voice=message.voice.file_id,
                              caption=message.caption, caption_entities=message.caption_entities,
@@ -965,8 +969,8 @@ async def taklif_process(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
-    # if message.photo:
-    #     await bot.send_message(message.photo[-1].file_id)
+    if message.photo:
+        await message.answer(message.photo[-1].file_id)
     if message.text == "☕ Anketalardan izlash":
         await search_anketa(message)
     elif message.text == "🗣 Takliflar":
@@ -1004,7 +1008,8 @@ async def some_text(message: types.Message):
     elif message.text == "🖼 Suratni alishtirish":
         await user_photo(message)
     elif message.text == "ℹ️ Qo'llanma":
-        await message.answer("Bu yerda yordam uchun matn bo'ladi")
+        await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
+                             "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
     elif message.text == "💔 Suhbatni yakunlash":
         await leave_from_chat_act(message)
     elif message.text == "👍 Ha":
@@ -1109,7 +1114,7 @@ async def yes_callback(callback: types.CallbackQuery):
     # sending new anketa
     text, photo, tg_id = await send_new_anketa(callback.from_user.id)
     if tg_id:
-        new_keyboard = await config.like_keyboard(new=True, user_id=callback.from_user.id)
+        new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
         await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
     else:
         await callback.message.answer_photo(photo=photo, caption=text)
@@ -1126,7 +1131,6 @@ async def confirm_callback(callback: types.CallbackQuery):
         # sending new message
         mail_keyboard = await config.send_mail_keyboard(tg_id)
         await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
-        await Anketa.user_id.set()
     else:
         await insert_db_prque(callback.from_user.id, tg_id)
         await callback.answer("Bekor qilindi!")
@@ -1134,21 +1138,17 @@ async def confirm_callback(callback: types.CallbackQuery):
     await callback.message.edit_reply_markup(reply_markup=old_keyboard)
 
 
-@dp.callback_query_handler(text_contains="mail")
-@dp.callback_query_handler(text_contains="cancel_mail")
+@dp.callback_query_handler(lambda call: call.data.startswith("mail"))
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
+    print(callback)
     action, tg_id = callback.data.split(":") # noqa
-    if action == "mail":
-        async with state.proxy() as data:
-            data["user_id"] = tg_id
-            data["message"] = callback.message
-
-        await Anketa.user_id.set()
-    else:
-        pass
-        await callback.answer("Bekor qilindi!")
-    await callback.message.edit_text("O'z xatingizni yozing")
-
+    print(action)
+    await callback.answer("Menga xabar yozing")
+    await Anketa.user_id.set()
+    async with state.proxy() as data:
+        data["user_id"] = tg_id
+    await callback.message.answer("O'z xatingizni yozing",
+                                  reply_markup=await config.send_mail_keyboard(tg_id, cancel=True))
     # TODO: NEED REALIZE PRCHATS LIST
 
 
@@ -1157,27 +1157,31 @@ async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
 async def get_message(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         if data:
+            if message.text == "🚫 Bekor qilish":
+                await message.answer("Bekor qilindi")
+                await menu(message)
+                return await state.finish()
             user = collusers.find_one({"_id": message.from_user.id})
             await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user['nickname'])
             await message.answer("Xatingiz yuborildi!")
+            await menu(message)
             await state.finish()
         else:
             await state.finish()
 
 
-@dp.callback_query_handler(state=Anketa.user_id)
-async def any_callback(callback: types.CallbackQuery, state):
-    action, tg_id = callback.data.split(":") # noqa
-    if action == "mail":
-        async with state.proxy() as data:
-            data["user_id"] = tg_id
-            data["message"] = callback.message
-
-        await Anketa.user_id.set()
-    else:
-        pass
-        await callback.answer("Bekor qilindi!")
-    await callback.message.edit_text("O'z xatingizni yozing")
+# @dp.callback_query_handler(state=Anketa.user_id)
+# async def any_callback(callback: types.CallbackQuery, state):
+#     action, tg_id = callback.data.split(":") # noqa
+#     if action == "mail":
+#         async with state.proxy() as data:
+#             data["user_id"] = tg_id
+#             data["message"] = callback.message
+#         await Anketa.user_id.set()
+#     else:
+#         pass
+#         await callback.answer("Bekor qilindi!")
+#     await callback.message.edit_text("O'z xatingizni yozing")
 
 
 if __name__ == "__main__":
