@@ -2,6 +2,8 @@ import logging
 import datetime
 import os
 
+from aiogram import types
+from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.callback_data import CallbackData
 
@@ -56,7 +58,7 @@ main_menu_keyboard = ReplyKeyboardMarkup(
         [KeyboardButton("☕️ Tasodifiy suhbatdosh")],
         [KeyboardButton("☕ Anketalardan izlash")],
         [KeyboardButton("🔖 Anketa"),
-         KeyboardButton("🆘 Yordam")]
+         KeyboardButton("ℹ️ Qo'llanma")]
     ],
     resize_keyboard=True
 )
@@ -67,8 +69,7 @@ anketa_keyboard = ReplyKeyboardMarkup(
             KeyboardButton("☕️ Suhbatdosh izlash")],
         [
             # KeyboardButton("💣 Anketani o'chirish"),
-            KeyboardButton("✏ Bio"), ],
-        [
+            KeyboardButton("✏ Bio"),
             KeyboardButton("🗣 Do'stlarga ulashish")],
         [
             KeyboardButton("🏠 Bosh menyu"), ]
@@ -85,6 +86,8 @@ change_bio_keyboard = ReplyKeyboardMarkup(
             KeyboardButton("✏ Kim bilan suxbatlashish?")],
         [
             KeyboardButton("✏ Tahallusni o'zgartirish")],
+        [
+            KeyboardButton("🖼 Suratni alishtirish")],
         [
             KeyboardButton("🔖 Anketa")]
     ],
@@ -117,7 +120,7 @@ async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboar
         )
 
 
-async def send_message_keyboard(user_id: str = None) -> InlineKeyboardMarkup:
+async def send_mail_keyboard(user_id: str = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -126,6 +129,42 @@ async def send_message_keyboard(user_id: str = None) -> InlineKeyboardMarkup:
             ]
         ],
     )
+
+
+async def get_message_data_for_fsm(message: types.Message, data: FSMContext.proxy):
+    if message.voice:
+        data['type'] = 'voice'
+        data['voice'] = message.voice.file_id
+        data['caption'] = message.caption
+        data['caption_entities'] = message.caption_entities
+        return data
+    elif message.video:
+        data['type'] = 'video'
+        data['video'] = message.video
+        data['caption'] = message.caption
+        data['caption_entities'] = message.caption_entities
+        return data
+    elif message.photo:
+        data['type'] = 'photo'
+        data['photo'] = message.photo[-1].file_id
+        data['caption'] = message.caption
+        data['caption_entities'] = message.caption_entities
+        return data
+    elif message.sticker:
+        data['type'] = 'sticker'
+        data['sticker'] = message.sticker.file_id
+        return data
+    elif message.text:
+        data['type'] = 'text'
+        data['text'] = message.text
+        data['entities'] = message.entities
+        return data
+    elif message.document:
+        data['type'] = 'document'
+        data['document'] = message.document.file_id
+        data['caption'] = message.caption
+        data['caption_entities'] = message.caption_entities
+        return data
 
 
 BOT_TOKEN = os.environ.get("davrabot")
