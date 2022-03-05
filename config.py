@@ -140,7 +140,22 @@ async def send_mail_keyboard(user_id: str = None, cancel: bool = False) -> (Inli
 
 
 async def get_message_data_for_fsm(message: types.Message, data: FSMContext.proxy):
-    if message.voice:
+    if message.forward_from_chat:
+        data['type'] = 'forward'
+        data['message'] = message
+        return data
+    elif message.text:
+        data['type'] = 'text'
+        data['text'] = message.text
+        data['entities'] = message.entities
+        return data
+    elif message.photo:
+        data['type'] = 'photo'
+        data['photo'] = message.photo[-1].file_id
+        data['caption'] = message.caption
+        data['caption_entities'] = message.caption_entities
+        return data
+    elif message.voice:
         data['type'] = 'voice'
         data['voice'] = message.voice.file_id
         data['caption'] = message.caption
@@ -152,20 +167,9 @@ async def get_message_data_for_fsm(message: types.Message, data: FSMContext.prox
         data['caption'] = message.caption
         data['caption_entities'] = message.caption_entities
         return data
-    elif message.photo:
-        data['type'] = 'photo'
-        data['photo'] = message.photo[-1].file_id
-        data['caption'] = message.caption
-        data['caption_entities'] = message.caption_entities
-        return data
     elif message.sticker:
         data['type'] = 'sticker'
         data['sticker'] = message.sticker.file_id
-        return data
-    elif message.text:
-        data['type'] = 'text'
-        data['text'] = message.text
-        data['entities'] = message.entities
         return data
     elif message.document:
         data['type'] = 'document'
@@ -173,7 +177,6 @@ async def get_message_data_for_fsm(message: types.Message, data: FSMContext.prox
         data['caption'] = message.caption
         data['caption_entities'] = message.caption_entities
         return data
-
 
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")

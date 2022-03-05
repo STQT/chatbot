@@ -108,10 +108,6 @@ async def search_random_anketa(user_id: int):
 
     for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
-    print(liked_user_list)
-    # x = collusers.find_one({"_id": {"$nin": liked_user_list},
-    #                         "gender": {"$nin": ["👩‍ Ayol kishi"]},
-    #                         "status": {"$nin": [False]}})
     if acc.get("gender", None) == "👩‍ Ayol kishi":
         find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
                                        "gender": {"$nin": ["👩‍ Ayol kishi"]},
@@ -125,7 +121,6 @@ async def search_random_anketa(user_id: int):
 
 async def send_new_anketa(user_id: int):
     find_doc = await search_random_anketa(user_id)  # noqa
-    print(find_doc)
     if find_doc:
         text = "Foydalanuvchi: {}\n" \
                "Bio: {}\n" \
@@ -142,30 +137,54 @@ async def send_new_anketa(user_id: int):
 async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: bool = True, nickname: str = None):
     user_nickname = None
     reply = None
-    if anketa:
+
+    # check parameter anketa
+    if anketa and nickname:
         user_nickname = "Foydalanuvchi *{}* dan xat:\n".format(nickname)
         reply = await config.send_mail_keyboard(message.from_user.id)
+
+    # change capiton text if anketa sender
+    if message.caption:
+        caption_text = (user_nickname + message.caption) if user_nickname else message.caption
+    else:
+        caption_text = user_nickname if user_nickname else None
     if message.text:
         await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text) if user_nickname else message.text,
                                entities=message.entities, reply_markup=reply, parse_mode="Markdown")
+    elif message.forward_from_chat:
+        await bot.forward_message(message.from_user.id, message.forward_from_chat.id, message.forward_from_message_id)
     elif message.voice:
         await bot.send_voice(chat_id=tg_id, voice=message.voice.file_id,
-                             caption=message.caption, caption_entities=message.caption_entities,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.video:
         await bot.send_video(chat_id=tg_id, video=message.video,
-                             caption=message.caption, caption_entities=message.caption_entities,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.photo:
         await bot.send_photo(chat_id=tg_id, photo=message.photo[-1].file_id,
-                             caption=message.caption, caption_entities=message.caption_entities,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.sticker:
+        if anketa:
+            await bot.send_message(chat_id=tg_id, text=f"Ushbu *{nickname}* foydalanuvchi sizga stiker jo'natdi",
+                                   parse_mode="Markdown")
         await bot.send_sticker(chat_id=tg_id, sticker=message.sticker.file_id)
+
     elif message.document:
         await bot.send_document(chat_id=tg_id, document=message.document.file_id,
-                                caption_entities=message.caption_entities, caption=message.caption,
+                                caption_entities=message.caption_entities,
+                                caption=caption_text,
                                 reply_markup=reply, parse_mode="Markdown")
+
+
+async def confirm_pr_chat_users(first_id: int, second_id: int):
+    collprchats.insert_one({
+        "first_id": first_id,
+        "second_id": second_id})
 
 
 @dp.message_handler(commands="main_menu")
@@ -1018,6 +1037,8 @@ async def some_text(message: types.Message):
         await no_rep_act(message)
     elif message.text == "🗣 Shikoyat berish":
         await report_rep_act(message)
+    elif message.text == "🚫 Bekor qilish":
+        await menu(message)
     elif chat:
         if message.content_type == "text":
             try:
@@ -1126,11 +1147,28 @@ async def confirm_callback(callback: types.CallbackQuery):
     # confirming and refusing callback reaction and answer user
     action, tg_id = callback.data.split(":")
     if action == "confirm":
+        # insert db prqueue query
         await insert_db_prque(callback.from_user.id, tg_id, True)
+        # insert db prchat query
+        await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
         await callback.answer("Qabul qilindi!")
         # sending new message
         mail_keyboard = await config.send_mail_keyboard(tg_id)
+        another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
         await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
+        # sending confirmation text from another user
+        acc = collusers.find_one({"_id": callback.from_user.id})
+        photo = acc.get("photo", None)
+        if not photo:
+            photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+        text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
+               "Foydalanuvchi: {}\n" \
+               "Bio: {}\n" \
+               "Jins: {}\n" \
+               "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
+                                           acc.get("gender", "Ma'lum emas"))
+        await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
+                             reply_markup=another_user_mail_keyboard)
     else:
         await insert_db_prque(callback.from_user.id, tg_id)
         await callback.answer("Bekor qilindi!")
@@ -1140,9 +1178,7 @@ async def confirm_callback(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(lambda call: call.data.startswith("mail"))
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
-    print(callback)
-    action, tg_id = callback.data.split(":") # noqa
-    print(action)
+    action, tg_id = callback.data.split(":")  # noqa
     await callback.answer("Menga xabar yozing")
     await Anketa.user_id.set()
     async with state.proxy() as data:
@@ -1162,7 +1198,7 @@ async def get_message(message: types.Message, state: FSMContext):
                 await menu(message)
                 return await state.finish()
             user = collusers.find_one({"_id": message.from_user.id})
-            await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user['nickname'])
+            await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user.get('nickname'))
             await message.answer("Xatingiz yuborildi!")
             await menu(message)
             await state.finish()
