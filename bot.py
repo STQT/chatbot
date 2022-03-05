@@ -1022,6 +1022,8 @@ async def some_text(message: types.Message):
         await user_tahallus(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
+    elif message.text == "✏ Haqimda":
+        await user_bio_change(message)
     elif message.text == "🖼 Suratni alishtirish":
         await user_photo(message)
     elif message.text == "ℹ️ Qo'llanma":
