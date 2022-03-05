@@ -988,8 +988,8 @@ async def taklif_process(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
-    if message.photo:
-        await message.answer(message.photo[-1].file_id)
+    # if message.photo:
+    #     await message.answer(message.photo[-1].file_id)
     if message.text == "☕ Anketalardan izlash":
         await search_anketa(message)
     elif message.text == "🗣 Takliflar":
