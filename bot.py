@@ -952,7 +952,7 @@ async def taklif_process(message: types.Message, state: FSMContext):
     elif message.text == "🏠 Bosh menyu":
         await state.finish()
         await menu(message)
-    elif message.text == "☕️ Suhbatdosh izlash":
+    elif message.text == "☕️ Tasodifiy suhbatdosh":
         await state.finish()
         await search_user_act(message)
     elif message.text == "👩 Qizlar izlash":
@@ -1012,8 +1012,6 @@ async def some_text(message: types.Message):
         await menu(message)
     elif message.text == "💣 Anketani o'chirish":
         await remove_account_act(message)
-    elif message.text == "☕️ Suhbatdosh izlash":
-        await search_user_act(message)
     elif message.text == "📛 Izlashni to'xtatish":
         await stop_search_act(message)
     elif message.text == "✏ Jins":
