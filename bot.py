@@ -71,9 +71,7 @@ async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
 
 async def send_reaction_func(sender_id: int, data: str):
     action, tg_id = data.split(":")
-    print("PROOOF", data)
     if action == "yes":
-        print("HAHAHAHA")
         try:
             sender_col = collusers.find_one({"_id": sender_id})
             keyboard = InlineKeyboardMarkup(
@@ -102,7 +100,6 @@ async def send_reaction_func(sender_id: int, data: str):
 
     else:
         await insert_db_prque(sender_id, tg_id)
-        print("NONONONO")
 
 
 async def search_random_anketa(user_id: int):
@@ -110,11 +107,9 @@ async def search_random_anketa(user_id: int):
     liked_user_list = [user_id, ]
     for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
-    print("PAPAOUTAI", liked_user_list)
     x = collusers.find_one({"_id": {"$nin": liked_user_list},
                             "gender": {"$nin": ["👩‍ Ayol kishi"]},
                             "status": {"$nin": [False]}})
-    print("OUTETETE", x)
     if acc.get("gender", None) == "👩‍ Ayol kishi":
         find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
                                        "gender": {"$nin": ["👩‍ Ayol kishi"]},
@@ -129,7 +124,6 @@ async def search_random_anketa(user_id: int):
 async def send_new_anketa(user_id: int):
     find_doc = await search_random_anketa(user_id)  # noqa
     if find_doc:
-        print(find_doc, "BURIZA DE KANYON")
         text = f"Foydalanuvchi: {find_doc.get('nickname', 'Nomalum')}\n" \
                f"Bio: {find_doc.get('bio', 'Nomalum')}"
         photo = find_doc.get("photo", None)
@@ -886,7 +880,6 @@ async def leave_from_chat_act(message: types.Message):
 @dp.message_handler(commands=["report"])
 async def taklif_user_message(message):
     x = await SetReport.report.set()
-    print(x)
     await message.answer("Bizga o'z takliflaringizni yuboring!")
 
 
@@ -971,10 +964,9 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
-    # chat = collchats.find_one({"user_chat_id": message.chat.id})
-    # print(chat)
-    if message.photo:
-        print(message)
+    chat = collchats.find_one({"user_chat_id": message.chat.id})
+    # if message.photo:
+    #     await bot.send_message(message.photo[-1].file_id)
     if message.text == "☕ Anketalardan izlash":
         await search_anketa(message)
     elif message.text == "🗣 Takliflar":
@@ -983,7 +975,7 @@ async def some_text(message: types.Message):
         await referal_link(message)
     elif message.text == "🏠 Bosh menyu":
         await menu(message)
-    # eliлf message.text == "💣 Anketani o'chirish":
+    # elif message.text == "💣 Anketani o'chirish":
     #     await remove_account_act(message)
     elif message.text == "☕️ Tasodifiy suhbatdosh":
         await search_user_act(message)
@@ -1109,7 +1101,6 @@ async def liked_callback(callback: types.CallbackQuery):
 @dp.callback_query_handler(text_contains="no")
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user
-    print("THIS YES")
     await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
     await callback.answer("Keyingisi!")
     # change reply keyboard and change callback data from keyboard
@@ -1146,7 +1137,6 @@ async def confirm_callback(callback: types.CallbackQuery):
 @dp.callback_query_handler(text_contains="mail")
 @dp.callback_query_handler(text_contains="cancel_mail")
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
-    print("THIS IS CALLBACK")
     action, tg_id = callback.data.split(":") # noqa
     if action == "mail":
         async with state.proxy() as data:
@@ -1165,7 +1155,6 @@ async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
 @dp.message_handler(state=Anketa.user_id, content_types=["text", "sticker", "photo",
                                                          "voice", "document", "video", "video_note"])
 async def get_message(message: types.Message, state: FSMContext):
-    print("THIS IS MESSAGE", message)
     async with state.proxy() as data:
         if data:
             user = collusers.find_one({"_id": message.from_user.id})
