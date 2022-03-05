@@ -24,6 +24,11 @@ collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
 collrefs = cluster.chatbot.refs
 collprchats = cluster.chatbot.prchats
+collprchatsqueue = cluster.chatbot.prchatsque
+colladmin = cluster.chatbot.admin
+
+DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAIWbWIjZw-DTOPvYIGf4sN_oxE9MpKoAAIuujEbaNIZSc0xIx-Oj2ddAQADAgADbQADIwQ"
+DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAIWa2IjZvFsAAGpuka9onRqCTiyBo5smwACMLoxG2jSGUn8QRYKtObqtQEAAwIAA20AAyME"
 
 
 class SetBio(StatesGroup):
@@ -31,6 +36,7 @@ class SetBio(StatesGroup):
     user_bio = State()
     gender = State()
     nickname = State()
+    photo = State()
 
 
 class SetRegBio(StatesGroup):
@@ -39,6 +45,7 @@ class SetRegBio(StatesGroup):
     gender = State()
     referal = State()
     city = State()
+    photo = State()
 
 
 class SetPost(StatesGroup):
@@ -48,6 +55,136 @@ class SetPost(StatesGroup):
 
 class SetReport(StatesGroup):
     report = State()
+
+
+class Anketa(StatesGroup):
+    user_id = State()
+
+
+async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
+    collprchatsqueue.insert_one({
+        "sender": sender_id,
+        "accepter": int(tg_id),
+        "like": like
+    })
+
+
+async def send_reaction_func(sender_id: int, data: str):
+    action, tg_id = data.split(":")
+    if action == "yes":
+        try:
+            sender_col = collusers.find_one({"_id": sender_id})
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton("👍", callback_data=CallbackData(
+                            "confirm", "action").new(action=str(sender_id))),
+                        InlineKeyboardButton("👎", callback_data=CallbackData(
+                            "refuse", "action").new(action=str(sender_id)))
+                    ]
+                ],
+            )
+            photo = sender_col.get("photo", None)
+            if not photo:
+                photo = DEFAULT_WOMAN_PHOTO if sender_col.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+            text = "*Sizga so'rov keldi*\n" \
+                   "Foydalanuvchi: {}\n" \
+                   "Bio: {}\n" \
+                   "Jins: {}".format(sender_col.get("nickname"), sender_col.get("bio"),
+                                     sender_col.get("gender", "Ma'lum emas"))
+            await bot.send_photo(int(tg_id), photo, text, parse_mode="Markdown", reply_markup=keyboard)
+            await insert_db_prque(sender_id, tg_id, like=True)
+        except Exception as e:
+            logging.error(f"Error: {e}")
+            await admin_commands.user_blocked_with_posting(int(tg_id))
+
+    else:
+        await insert_db_prque(sender_id, tg_id)
+
+
+async def search_random_anketa(user_id: int):
+    acc = collusers.find_one({"_id": user_id})
+    liked_user_list = [user_id, ]
+
+    for i in collprchatsqueue.find({"sender": user_id}):
+        liked_user_list.append(i["accepter"])
+    if acc.get("gender", None) == "👩‍ Ayol kishi":
+        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
+                                       "gender": {"$nin": ["👩‍ Ayol kishi"]},
+                                       "status": {"$nin": [False]}})
+    else:
+        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
+                                       "gender": {"$in": ["👩‍ Ayol kishi"]},
+                                       "status": {"$nin": [False]}})
+    return find_doc
+
+
+async def send_new_anketa(user_id: int):
+    find_doc = await search_random_anketa(user_id)  # noqa
+    if find_doc:
+        text = "Foydalanuvchi: {}\n" \
+               "Bio: {}\n" \
+               "Jins: {}".format(find_doc.get("nickname"), find_doc.get("bio"),
+                                 find_doc.get("gender", "Ma'lum emas"))
+        photo = find_doc.get("photo", None)
+        if not photo:
+            photo = DEFAULT_WOMAN_PHOTO if find_doc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+        return text, photo, find_doc.get("_id")
+    else:
+        return "Hech qanday foydalanuvchi mavjud emas", DEFAULT_MAN_PHOTO, None
+
+
+async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: bool = True, nickname: str = None):
+    user_nickname = None
+    reply = None
+
+    # check parameter anketa
+    if anketa and nickname:
+        user_nickname = "Foydalanuvchi *{}* dan xat:\n".format(nickname)
+        reply = await config.send_mail_keyboard(message.from_user.id)
+
+    # change capiton text if anketa sender
+    if message.caption:
+        caption_text = (user_nickname + message.caption) if user_nickname else message.caption
+    else:
+        caption_text = user_nickname if user_nickname else None
+    if message.text:
+        await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text) if user_nickname else message.text,
+                               entities=message.entities, reply_markup=reply, parse_mode="Markdown")
+    elif message.forward_from_chat:
+        await bot.forward_message(message.from_user.id, message.forward_from_chat.id, message.forward_from_message_id)
+    elif message.voice:
+        await bot.send_voice(chat_id=tg_id, voice=message.voice.file_id,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
+                             reply_markup=reply, parse_mode="Markdown")
+    elif message.video:
+        await bot.send_video(chat_id=tg_id, video=message.video,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
+                             reply_markup=reply, parse_mode="Markdown")
+    elif message.photo:
+        await bot.send_photo(chat_id=tg_id, photo=message.photo[-1].file_id,
+                             caption=caption_text,
+                             caption_entities=message.caption_entities,
+                             reply_markup=reply, parse_mode="Markdown")
+    elif message.sticker:
+        if anketa:
+            await bot.send_message(chat_id=tg_id, text=f"Ushbu *{nickname}* foydalanuvchi sizga stiker jo'natdi",
+                                   parse_mode="Markdown")
+        await bot.send_sticker(chat_id=tg_id, sticker=message.sticker.file_id)
+
+    elif message.document:
+        await bot.send_document(chat_id=tg_id, document=message.document.file_id,
+                                caption_entities=message.caption_entities,
+                                caption=caption_text,
+                                reply_markup=reply, parse_mode="Markdown")
+
+
+async def confirm_pr_chat_users(first_id: int, second_id: int):
+    collprchats.insert_one({
+        "first_id": first_id,
+        "second_id": second_id})
 
 
 @dp.message_handler(commands="main_menu")
@@ -102,6 +239,17 @@ async def user_bio_change(message: types.Message):
         await message.answer("Iltimos, qisqacha o'zingiz haqingizda yozing")
 
 
+@dp.message_handler(commands=["search_anketa"])
+async def search_anketa(message: types.Message):
+    # sending first (new) anketa
+    text, photo, tg_id = await send_new_anketa(message.from_user.id)
+    if tg_id:
+        keyboard = await config.like_keyboard(new=True, user_id=tg_id)
+        await message.answer_photo(photo=photo, caption=text, reply_markup=keyboard)
+    else:
+        await message.answer_photo(photo=photo, caption=text)
+
+
 @dp.message_handler(commands=["jins", "set_gender", "new_gender", "about_gender"])
 async def user_gender(message: types.Message):
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
@@ -137,6 +285,15 @@ async def user_tahallus(message: types.Message):
         await message.answer("Iltimos, o'z tahallusingizni yozing")
 
 
+@dp.message_handler(commands=["photo_set", "photo", "set_photo"])
+async def user_photo(message: types.Message):
+    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+        await account_user(message)
+    else:
+        await SetBio.photo.set()
+        await message.answer("Iltimos, bironta siz bilan bog'liq rasm yuboring")
+
+
 @dp.message_handler(state=SetBio.nickname)
 async def process_set_nickname(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -151,13 +308,16 @@ async def process_set_nickname(message: types.Message, state: FSMContext):
 @dp.message_handler(state=SetBio.user_bio)
 async def process_set_bio(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data["user_bio"] = message.text
-        collusers.update_one({"_id": message.from_user.id}, {
-            "$set": {"bio": data["user_bio"]}})
+        if message.text:
+            data["user_bio"] = message.text
+            collusers.update_one({"_id": message.from_user.id}, {
+                "$set": {"bio": data["user_bio"]}})
 
-        await message.answer("Ma'lumotlar saqlandi")
-        await state.finish()
-    await menu(message)
+            await message.answer("Ma'lumotlar saqlandi")
+            await state.finish()
+            await menu(message)
+        else:
+            await message.answer("Iltimos matn formatda yozing!")
 
 
 @dp.message_handler(state=SetBio.finding)
@@ -206,6 +366,18 @@ async def process_set_gender(message: types.Message, state: FSMContext):
         await account_user(message)
 
 
+@dp.message_handler(state=SetBio.photo, content_types=["photo"])
+async def process_set_photo(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data["user_photo"] = message.photo[-1].file_id
+        collusers.update_one({"_id": message.from_user.id}, {
+            "$set": {"photo": data["user_photo"]}})
+
+        await message.answer("Ma'lumotlar saqlandi")
+        await state.finish()
+        await menu(message)
+
+
 @dp.message_handler(commands=["ref_link"])
 async def referal_link(message: types.Message):
     text = "Do'stlaringizga ulashing va balansingizni to'ldiring\n" \
@@ -222,14 +394,18 @@ async def account_user(message: types.Message):
         await message.answer("Siz tizimda hali ro'yxatdan o'tmagansiz", reply_markup=keyboard)
     else:
         acc = collusers.find_one({"_id": message.from_user.id})
-        text = f"👤Tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
-               f"💵 Balans: {acc.get('balance', None)}\n" \
+        text = f"*👤Tahallusi*: {acc.get('nickname', 'Mavjud emas')}\n" \
+               f"*💵 Referal*: {acc.get('balance', None)}\n" \
                f"⭐️Reyting: {acc.get('reputation', None)}\n" \
-               f"📝Bio: {acc.get('bio', None)}\n" \
-               f"👫Jins: {acc.get('gender', 'Noaniq')}\n" \
-               f"👫Qidiruv: {acc.get('finding', 'Noaniq')}"
+               f"*📝Bio*: {acc.get('bio', None)}\n" \
+               f"*👫Jins*: {acc.get('gender', 'Noaniq')}\n" \
+               f"*👫Qidiruv*: {acc.get('finding', 'Noaniq')}"
         keyboard = config.anketa_keyboard
-        await message.answer(text, reply_markup=keyboard)
+        photo = acc.get("photo", None)
+        if not photo:
+            photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+        # await message.answer(text, reply_markup=keyboard)
+        await message.answer_photo(photo, text, parse_mode="Markdown", reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["anketani", "remove_acc", "remove_account"])
@@ -304,43 +480,8 @@ async def process_send_post(message: types.Message, state: FSMContext):
         await menu(message)
     else:
         async with state.proxy() as data:
-            if message.voice:
-                data['type'] = 'voice'
-                data['voice'] = message.voice.file_id
-                data['caption'] = message.caption
-                data['caption_entities'] = message.caption_entities
-                await bot.send_voice(chat_id=message.from_user.id, voice=message.voice.file_id,
-                                     caption=message.caption, caption_entities=message.caption_entities)
-            elif message.video:
-                data['type'] = 'video'
-                data['video'] = message.video
-                data['caption'] = message.caption
-                data['caption_entities'] = message.caption_entities
-                await bot.send_video(chat_id=message.from_user.id, video=message.video,
-                                     caption=message.caption, caption_entities=message.caption_entities)
-            elif message.photo:
-                data['type'] = 'photo'
-                data['photo'] = message.photo[-1].file_id
-                data['caption'] = message.caption
-                data['caption_entities'] = message.caption_entities
-                await bot.send_photo(chat_id=message.from_user.id, photo=message.photo[-1].file_id,
-                                     caption=message.caption, caption_entities=message.caption_entities)
-            elif message.sticker:
-                data['type'] = 'sticker'
-                data['sticker'] = message.sticker.file_id
-                await bot.send_sticker(chat_id=message.from_user.id, sticker=message.sticker.file_id)
-            elif message.text:
-                data['type'] = 'text'
-                data['text'] = message.text
-                data['entities'] = message.entities
-                await bot.send_message(chat_id=message.from_user.id, text=message.text, entities=message.entities)
-            elif message.document:
-                data['type'] = 'document'
-                data['document'] = message.document.file_id
-                data['caption'] = message.caption
-                data['caption_entities'] = message.caption_entities
-                await bot.send_document(chat_id=message.from_user.id, document=message.document.file_id,
-                                        caption_entities=message.caption_entities, caption=message.caption)
+            await config.get_message_data_for_fsm(message, data)
+            await send_message_for_tg_id(message, message.from_user.id)
             # await state.finish()
             keyboard = ReplyKeyboardMarkup(
                 [[KeyboardButton("☑️Yuborish"), KeyboardButton("☑️Faol emaslarga"),
@@ -700,7 +841,7 @@ async def delete_chats(message: types.Message):
 
 
 @dp.message_handler(commands=['admin'])
-async def delete_chats(message: types.Message):
+async def admin_help_message(message: types.Message):
     if message.from_user.id in config.admin_ids:
         await message.answer("Hozirda mavjud admin komandalar\n"
                              "/admin - Ushbu xabarni chaqirish\n"
@@ -761,7 +902,7 @@ async def leave_from_chat_act(message: types.Message):
 
 @dp.message_handler(commands=["report"])
 async def taklif_user_message(message):
-    await SetReport.report.set()
+    x = await SetReport.report.set()
     await message.answer("Bizga o'z takliflaringizni yuboring!")
 
 
@@ -847,7 +988,11 @@ async def taklif_process(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
-    if message.text == "🗣 Takliflar":
+    if message.photo:
+        await message.answer(message.photo[-1].file_id)
+    if message.text == "☕ Anketalardan izlash":
+        await search_anketa(message)
+    elif message.text == "🗣 Takliflar":
         await taklif_user_message(message)
     elif message.text == "🗣 Do'stlarga ulashish":
         await referal_link(message)
@@ -855,7 +1000,7 @@ async def some_text(message: types.Message):
         await menu(message)
     # elif message.text == "💣 Anketani o'chirish":
     #     await remove_account_act(message)
-    elif message.text == "☕️ Suhbatdosh izlash":
+    elif message.text == "☕️ Tasodifiy suhbatdosh":
         await search_user_act(message)
     elif message.text == "📝 Ro'yxatdan o'tish":
         await account_registration_act(message)
@@ -879,6 +1024,11 @@ async def some_text(message: types.Message):
         await user_tahallus(message)
     elif message.text == "✏ Bio":
         await user_bio(message)
+    elif message.text == "🖼 Suratni alishtirish":
+        await user_photo(message)
+    elif message.text == "ℹ️ Qo'llanma":
+        await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
+                             "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
     elif message.text == "💔 Suhbatni yakunlash":
         await leave_from_chat_act(message)
     elif message.text == "👍 Ha":
@@ -887,6 +1037,8 @@ async def some_text(message: types.Message):
         await no_rep_act(message)
     elif message.text == "🗣 Shikoyat berish":
         await report_rep_act(message)
+    elif message.text == "🚫 Bekor qilish":
+        await menu(message)
     elif chat:
         if message.content_type == "text":
             try:
@@ -964,6 +1116,108 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
         await menu(callback_query)
     else:
         await callback_query.answer(text="A'zo bo'lmadingiz!", show_alert=True)
+
+
+@dp.callback_query_handler(text_contains="liked")
+async def liked_callback(callback: types.CallbackQuery):
+    await callback.answer("Allaqachon ovoz bergansiz!")
+
+
+@dp.callback_query_handler(text_contains="yes")
+@dp.callback_query_handler(text_contains="no")
+async def yes_callback(callback: types.CallbackQuery):
+    # sending callback reaction and answer user
+    await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
+    await callback.answer("Keyingisi!")
+    # change reply keyboard and change callback data from keyboard
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    # sending new anketa
+    text, photo, tg_id = await send_new_anketa(callback.from_user.id)
+    if tg_id:
+        new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
+        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+    else:
+        await callback.message.answer_photo(photo=photo, caption=text)
+
+
+@dp.callback_query_handler(text_contains="confirm")
+@dp.callback_query_handler(text_contains="refuse")
+async def confirm_callback(callback: types.CallbackQuery):
+    # confirming and refusing callback reaction and answer user
+    action, tg_id = callback.data.split(":")
+    if action == "confirm":
+        # insert db prqueue query
+        await insert_db_prque(callback.from_user.id, tg_id, True)
+        # insert db prchat query
+        await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
+        await callback.answer("Qabul qilindi!")
+        # sending new message
+        mail_keyboard = await config.send_mail_keyboard(tg_id)
+        another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
+        await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
+        # sending confirmation text from another user
+        acc = collusers.find_one({"_id": callback.from_user.id})
+        photo = acc.get("photo", None)
+        if not photo:
+            photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+        text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
+               "Foydalanuvchi: {}\n" \
+               "Bio: {}\n" \
+               "Jins: {}\n" \
+               "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
+                                           acc.get("gender", "Ma'lum emas"))
+        await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
+                             reply_markup=another_user_mail_keyboard)
+    else:
+        await insert_db_prque(callback.from_user.id, tg_id)
+        await callback.answer("Bekor qilindi!")
+    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+
+
+@dp.callback_query_handler(lambda call: call.data.startswith("mail"))
+async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
+    action, tg_id = callback.data.split(":")  # noqa
+    await callback.answer("Menga xabar yozing")
+    await Anketa.user_id.set()
+    async with state.proxy() as data:
+        data["user_id"] = tg_id
+    await callback.message.answer("O'z xatingizni yozing",
+                                  reply_markup=await config.send_mail_keyboard(tg_id, cancel=True))
+    # TODO: NEED REALIZE PRCHATS LIST
+
+
+@dp.message_handler(state=Anketa.user_id, content_types=["text", "sticker", "photo",
+                                                         "voice", "document", "video", "video_note"])
+async def get_message(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        if data:
+            if message.text == "🚫 Bekor qilish":
+                await message.answer("Bekor qilindi")
+                await menu(message)
+                return await state.finish()
+            user = collusers.find_one({"_id": message.from_user.id})
+            await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user.get('nickname'))
+            await message.answer("Xatingiz yuborildi!")
+            await menu(message)
+            await state.finish()
+        else:
+            await state.finish()
+
+
+# @dp.callback_query_handler(state=Anketa.user_id)
+# async def any_callback(callback: types.CallbackQuery, state):
+#     action, tg_id = callback.data.split(":") # noqa
+#     if action == "mail":
+#         async with state.proxy() as data:
+#             data["user_id"] = tg_id
+#             data["message"] = callback.message
+#         await Anketa.user_id.set()
+#     else:
+#         pass
+#         await callback.answer("Bekor qilindi!")
+#     await callback.message.edit_text("O'z xatingizni yozing")
 
 
 if __name__ == "__main__":
