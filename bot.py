@@ -27,8 +27,8 @@ collprchats = cluster.chatbot.prchats
 collprchatsqueue = cluster.chatbot.prchatsque
 colladmin = cluster.chatbot.admin
 
-DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAIWbWIjZw-DTOPvYIGf4sN_oxE9MpKoAAIuujEbaNIZSc0xIx-Oj2ddAQADAgADbQADIwQ"
-DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAIWa2IjZvFsAAGpuka9onRqCTiyBo5smwACMLoxG2jSGUn8QRYKtObqtQEAAwIAA20AAyME"
+DEFAULT_MAN_PHOTO = "AgACAgIAAxkBAAERnQliI7sTh_4hYOFm2WU9llpkq005xwACLroxG2jSGUmjORqFgslO2wEAAwIAA20AAyME"
+DEFAULT_WOMAN_PHOTO = "AgACAgIAAxkBAAERnQFiI7ronfAEFK0tBXj9U3fBPceixwACMLoxG2jSGUkBxYECSA2mwQEAAwIAA20AAyME"
 
 
 class SetBio(StatesGroup):
