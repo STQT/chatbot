@@ -1283,6 +1283,18 @@ async def get_message(message: types.Message, state: FSMContext):
 #     await callback.message.edit_text("O'z xatingizni yozing")
 
 
+@dp.callback_query_handler()
+@dp.throttled(rate=1)
+async def any_callback_answer(callback: types.CallbackQuery):
+    await callback.answer("Biroz kuting...")
+
+
+@dp.message_handler()
+@dp.throttled(rate=1)
+async def any_message_answer(message: types.Message):
+    await message.answer("Biroz kuting...")
+
+
 if __name__ == "__main__":
     print("Bot ishga tushirilmoqda...")
     executor.start_polling(dp)
