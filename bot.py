@@ -199,6 +199,7 @@ async def menu(message: types.Message or types.CallbackQuery):
 
 
 @dp.message_handler(commands="start")
+@dp.throttled(on_throttled=handler_throttled, rate=5)
 async def start_menu(message: types.Message):
     keyboard = config.main_menu_keyboard
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
