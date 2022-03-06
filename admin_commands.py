@@ -104,12 +104,14 @@ async def send_post_all_users(data, users):
             try:
                 keyboard = ReplyKeyboardMarkup(
                     [
-                        [
-                            KeyboardButton("☕️ Suhbatdosh izlash")
-                        ],
-                        [
-                            KeyboardButton("🗣 Takliflar")
-                        ]], resize_keyboard=True, one_time_keyboard=True)
+                        [KeyboardButton("☕️ Tasodifiy suhbatdosh")],
+                        # [KeyboardButton("☕ Anketalardan izlash")],
+                        [KeyboardButton("☕ Anketalardan izlash")],
+                        [KeyboardButton("🔖 Anketa"),
+                         KeyboardButton("ℹ️ Qo'llanma")]
+                    ],
+                    resize_keyboard=True
+                )
                 await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'], reply_markup=keyboard)
                 await asyncio.sleep(0.04)
             except (BotKicked, BotBlocked, UserDeactivated):
