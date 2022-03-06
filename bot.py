@@ -61,6 +61,10 @@ class Anketa(StatesGroup):
     user_id = State()
 
 
+async def handler_throttled(message: types.Message, **kwargs):
+    await message.answer("Qayta qayta yozavermang, biroz kutib yozing")
+
+
 async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
     collprchatsqueue.insert_one({
         "sender": sender_id,
@@ -993,7 +997,7 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
-@dp.throttled(rate=5)
+@dp.throttled(rate=1)
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
     # if message.photo:
@@ -1250,7 +1254,7 @@ async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state=Anketa.user_id, content_types=["text", "sticker", "photo",
-                                                         "voice", "document", "video", "video_note"])
+                                                         "voice", "document", "videoThrottled!", "video_note"])
 async def get_message(message: types.Message, state: FSMContext):
     try:
         async with state.proxy() as data:
