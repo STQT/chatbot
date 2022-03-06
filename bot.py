@@ -62,6 +62,7 @@ class Anketa(StatesGroup):
 
 
 async def handler_throttled(message: types.Message, **kwargs):
+    # await bot.send_message(message.from_user.id, "Qayta qayta yozavermang, biroz kutib yozing")
     await message.answer("Qayta qayta yozavermang, biroz kutib yozing")
 
 
@@ -997,7 +998,7 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
     # if message.photo:
@@ -1140,7 +1141,7 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="liked")
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def liked_callback(callback: types.CallbackQuery):
     try:
         await callback.answer("Allaqachon ovoz bergansiz!")
@@ -1149,7 +1150,7 @@ async def liked_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="yes")
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
     try:
@@ -1170,7 +1171,7 @@ async def yes_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="no")
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
     try:
@@ -1191,7 +1192,7 @@ async def yes_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="confirm")
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery):
     # confirming and refusing callback reaction and answer user
     try:
@@ -1225,7 +1226,7 @@ async def confirm_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="refuse")
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery):
     try:
         # confirming and refusing callback reaction and answer user
@@ -1289,13 +1290,13 @@ async def get_message(message: types.Message, state: FSMContext):
 
 
 @dp.callback_query_handler()
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def any_callback_answer(callback: types.CallbackQuery):
     await callback.answer("Biroz kuting...")
 
 
 @dp.message_handler()
-@dp.throttled(rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=1)
 async def any_message_answer(message: types.Message):
     await message.answer("Biroz kuting...")
 
