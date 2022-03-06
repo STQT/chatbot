@@ -95,16 +95,19 @@ change_bio_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True
 )
 
+vote_cb = CallbackData('vote', 'id', 'action')  # vote:<id>:<action>
+liked_cb = CallbackData('liked', 'action')  # liked:liked
+confirm_cb = CallbackData('confirm', 'id', 'action')  # confirm:<id>:<action>
+mail_cb = CallbackData('mail', 'id', 'action')
+
 
 async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboardMarkup:
     if new:  # if Unreaction keyboard
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton("👍", callback_data=CallbackData(
-                        "yes", "action").new(action=str(user_id))),
-                    InlineKeyboardButton("👎", callback_data=CallbackData(
-                        "no", "action").new(action=str(user_id)))
+                    InlineKeyboardButton("👍", callback_data=vote_cb.new(id=str(user_id), action="yes")),
+                    InlineKeyboardButton("👎", callback_data=vote_cb.new(id=str(user_id), action="no")),
                 ]
             ],
         )
@@ -112,10 +115,8 @@ async def like_keyboard(new: bool = False, user_id: int = None) -> InlineKeyboar
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton("👍", callback_data=CallbackData(
-                        "liked", "action").new(action="liked")),
-                    InlineKeyboardButton("👎", callback_data=CallbackData(
-                        "liked", "action").new(action="liked"))
+                    InlineKeyboardButton("👍", callback_data=liked_cb.new(action="liked")),
+                    InlineKeyboardButton("👎", callback_data=liked_cb.new(action="liked"))
                 ]
             ],
         )
@@ -133,8 +134,7 @@ async def send_mail_keyboard(user_id: str = None, cancel: bool = False) -> (Inli
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton("📤", callback_data=CallbackData(
-                        "mail", "action").new(action=user_id))
+                    InlineKeyboardButton("📤", callback_data=mail_cb.new(id=user_id, action="mail"))
                 ]
             ],
         )

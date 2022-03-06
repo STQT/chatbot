@@ -1,11 +1,12 @@
 import asyncio
 import logging
 
+import typing
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
-from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated
+from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated, Throttled, MessageNotModified
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -72,20 +73,22 @@ async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
         "accepter": int(tg_id),
         "like": like
     })
+    return True
 
 
-async def send_reaction_func(sender_id: int, data: str):
-    action, tg_id = data.split(":")
+async def send_reaction_func(sender_id: int, callback_data: typing.Dict[str, str]):
+    tg_id = callback_data['id']
+    action = callback_data['action']
     if action == "yes":
         try:
             sender_col = collusers.find_one({"_id": sender_id})
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
-                        InlineKeyboardButton("👍", callback_data=CallbackData(
-                            "confirm", "action").new(action=str(sender_id))),
-                        InlineKeyboardButton("👎", callback_data=CallbackData(
-                            "refuse", "action").new(action=str(sender_id)))
+                        InlineKeyboardButton("👍",
+                                             callback_data=config.confirm_cb.new(id=str(sender_id), action="confirm")),
+                        InlineKeyboardButton("👎",
+                                             callback_data=config.confirm_cb.new(id=str(sender_id), action="refuse"))
                     ]
                 ],
             )
@@ -1141,7 +1144,7 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
         logging.error(f"CHANNEL SUBSCRIBE XATO: {e}")
 
 
-@dp.callback_query_handler(text_contains="liked")
+@dp.callback_query_handler(config.liked_cb.filter(action=["liked"]))
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def liked_callback(callback: types.CallbackQuery):
     try:
@@ -1150,13 +1153,16 @@ async def liked_callback(callback: types.CallbackQuery):
         logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
-@dp.callback_query_handler(text_contains="yes")
-@dp.throttled(on_throttled=handler_throttled, rate=1)
-async def yes_callback(callback: types.CallbackQuery):
-    # sending callback reaction and answer user # noqa
+@dp.callback_query_handler(config.vote_cb.filter(action=['yes', 'no']))
+async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     try:
-        await callback.answer()
-        await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
+        await dp.throttle('vote', rate=1)
+    except Throttled:
+        return await callback.answer('Juda kop bosdingiz')
+    await callback.answer()
+    # sending callback reaction and answer user
+    try: # noqa
+        await send_reaction_func(sender_id=callback.from_user.id, callback_data=callback_data)
         # change reply keyboard and change callback data from keyboard
         old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
         await callback.message.edit_reply_markup(reply_markup=old_keyboard)
@@ -1171,38 +1177,18 @@ async def yes_callback(callback: types.CallbackQuery):
         logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
-@dp.callback_query_handler(text_contains="no")
+@dp.callback_query_handler(config.confirm_cb.filter(action=['confirm']))
 @dp.throttled(on_throttled=handler_throttled, rate=1)
-async def yes_callback(callback: types.CallbackQuery):
-    # sending callback reaction and answer user # noqa
-    try:
-        await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
-        await callback.answer("Keyingisi!")
-        # change reply keyboard and change callback data from keyboard
-        old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
-        await callback.message.edit_reply_markup(reply_markup=old_keyboard)
-        # sending new anketa
-        text, photo, tg_id = await send_new_anketa(callback.from_user.id)
-        if tg_id:
-            new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
-            await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
-        else:
-            await callback.message.answer_photo(photo=photo, caption=text)
-    except Exception as e:
-        logging.error(f"XATOLIK YUZ BERDI: {e}")
-
-
-@dp.callback_query_handler(text_contains="confirm")
-@dp.throttled(on_throttled=handler_throttled, rate=1)
-async def confirm_callback(callback: types.CallbackQuery):
+async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     # confirming and refusing callback reaction and answer user
+    await callback.answer("Qabul qilindi!")
     try:
-        action, tg_id = callback.data.split(":")
+        # action = callback_data['action']
+        tg_id = callback_data['id']
         # insert db prqueue query
         await insert_db_prque(callback.from_user.id, tg_id, True)
         # insert db prchat query
         await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
-        await callback.answer("Qabul qilindi!")
         # sending new message
         mail_keyboard = await config.send_mail_keyboard(tg_id)
         another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
@@ -1226,24 +1212,26 @@ async def confirm_callback(callback: types.CallbackQuery):
         logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
-@dp.callback_query_handler(text_contains="refuse")
+@dp.callback_query_handler(config.confirm_cb.filter(action=['refuse']))
 @dp.throttled(on_throttled=handler_throttled, rate=1)
-async def confirm_callback(callback: types.CallbackQuery):
+async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    await callback.answer("Bekor qilindi!")
     try:
         # confirming and refusing callback reaction and answer user
-        action, tg_id = callback.data.split(":")
+        # action = callback_data['action']
+        tg_id = callback_data['id']
         await insert_db_prque(callback.from_user.id, tg_id)
-        await callback.answer("Bekor qilindi!")
         old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
         await callback.message.edit_reply_markup(reply_markup=old_keyboard)
     except Exception as e:
         logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
-@dp.callback_query_handler(lambda call: call.data.startswith("mail"))
-async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
+@dp.callback_query_handler(config.mail_cb.filter(action=['mail']))
+async def mail_callback(callback: types.CallbackQuery, state: FSMContext, callback_data: typing.Dict[str, str]):
     try:
-        action, tg_id = callback.data.split(":")  # noqa
+        # action = callback_data['action']
+        tg_id = callback_data['id']
         await callback.answer("Menga xabar yozing")
         await Anketa.user_id.set()
         async with state.proxy() as data:
@@ -1300,6 +1288,12 @@ async def any_callback_answer(callback: types.CallbackQuery):
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def any_message_answer(message: types.Message):
     await message.answer("Biroz kuting...")
+
+
+@dp.errors_handler(exception=MessageNotModified)
+async def message_not_modified_handler(update, error):
+    logging.error(f"MESSAGE NOT MODIFIED: {update}\n{error}")
+    return True # errors_handler must return True if error was handled correctly
 
 
 if __name__ == "__main__":
