@@ -907,6 +907,7 @@ async def taklif_user_message(message):
 
 
 @dp.message_handler(commands=["follow"])
+@dp.throttled(rate=1)
 async def following_channel(msg):
     try:
         keyboard_buttons = []
@@ -1134,7 +1135,7 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="liked")
-@dp.throttled(rate=2)
+@dp.throttled(rate=1)
 async def liked_callback(callback: types.CallbackQuery):
     try:
         await callback.answer("Allaqachon ovoz bergansiz!")
@@ -1143,7 +1144,7 @@ async def liked_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="yes")
-@dp.throttled(rate=2)
+@dp.throttled(rate=1)
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
     try:
@@ -1164,7 +1165,7 @@ async def yes_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="no")
-@dp.throttled(rate=2)
+@dp.throttled(rate=1)
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
     try:
@@ -1185,7 +1186,7 @@ async def yes_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="confirm")
-@dp.throttled(rate=2)
+@dp.throttled(rate=1)
 async def confirm_callback(callback: types.CallbackQuery):
     # confirming and refusing callback reaction and answer user
     try:
@@ -1219,7 +1220,7 @@ async def confirm_callback(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text_contains="refuse")
-@dp.throttled(rate=2)
+@dp.throttled(rate=1)
 async def confirm_callback(callback: types.CallbackQuery):
     try:
         # confirming and refusing callback reaction and answer user
