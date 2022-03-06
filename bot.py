@@ -908,39 +908,45 @@ async def taklif_user_message(message):
 
 @dp.message_handler(commands=["follow"])
 async def following_channel(msg):
-    keyboard_buttons = []
-    for i in config.channel_urls_dict:
-        keyboard_buttons.append(
-            InlineKeyboardButton(f"{i.get('title')}",
-                                 url=i.get('link')))
-    inline_keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            keyboard_buttons,
-            [InlineKeyboardButton("✅ Tasdiqlash",
-                                  callback_data=CallbackData("choice", "action").new(
-                                      action="channel_subscribe"))]
-        ],
-        one_time_keyboard=True
-    )
-    await msg.answer("Kanalga a'zo bo'lish majburiy!", reply_markup=inline_keyboard)
+    try:
+        keyboard_buttons = []
+        for i in config.channel_urls_dict:
+            keyboard_buttons.append(
+                InlineKeyboardButton(f"{i.get('title')}",
+                                     url=i.get('link')))
+        inline_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                keyboard_buttons,
+                [InlineKeyboardButton("✅ Tasdiqlash",
+                                      callback_data=CallbackData("choice", "action").new(
+                                          action="channel_subscribe"))]
+            ],
+            one_time_keyboard=True
+        )
+        await msg.answer("Kanalga a'zo bo'lish majburiy!", reply_markup=inline_keyboard)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.message_handler(commands=["repost"])
 async def reposting_bot(msg):
-    acc = collusers.find_one({"_id": msg.from_user.id})
-    balance = acc.get('balance', 0)
-    keyboard = InlineKeyboardMarkup()
-    keyboard.add(InlineKeyboardButton("Do'st topish", url=f"https://t.me/davra_bot?start={msg.from_user.id}"))
-    await msg.answer("To'g'ridan-to'g'ri qizlar izlash funksiyasini yoqish uchun *10* "
-                     "nafar *yangi* foydalanuvchi havola orqali botga a'zo qilishingiz talab qilinadi\n\n"
-                     "Hozirda siz qo'shgan *yangi* foydalanuvchilar soni:\n"
-                     f"👤: *{balance}*\n\n",
-                     parse_mode="markdown")
-    await msg.answer("Do'stlar orttirishni hoxlaysizmi?\n"
-                     "Unda shu havolani ulashing:\n\n"
-                     f"`t.me/davra_bot?start={msg.from_user.id}`\n\n"
-                     f"[Do'st orttirish uchun havola](t.me/davra_bot?start={msg.from_user.id}\n",
-                     reply_markup=keyboard, parse_mode="markdown")
+    try:
+        acc = collusers.find_one({"_id": msg.from_user.id})
+        balance = acc.get('balance', 0)
+        keyboard = InlineKeyboardMarkup()
+        keyboard.add(InlineKeyboardButton("Do'st topish", url=f"https://t.me/davra_bot?start={msg.from_user.id}"))
+        await msg.answer("To'g'ridan-to'g'ri qizlar izlash funksiyasini yoqish uchun *10* "
+                         "nafar *yangi* foydalanuvchi havola orqali botga a'zo qilishingiz talab qilinadi\n\n"
+                         "Hozirda siz qo'shgan *yangi* foydalanuvchilar soni:\n"
+                         f"👤: *{balance}*\n\n",
+                         parse_mode="markdown")
+        await msg.answer("Do'stlar orttirishni hoxlaysizmi?\n"
+                         "Unda shu havolani ulashing:\n\n"
+                         f"`t.me/davra_bot?start={msg.from_user.id}`\n\n"
+                         f"[Do'st orttirish uchun havola](t.me/davra_bot?start={msg.from_user.id}\n",
+                         reply_markup=keyboard, parse_mode="markdown")
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.message_handler(state=SetReport.report, content_types=["text", "sticker", "photo", "voice", "document", "video"])
@@ -1099,132 +1105,162 @@ async def some_text(message: types.Message):
 
 @dp.callback_query_handler(text_contains="remove")
 async def process_remove_account(callback: types.CallbackQuery):
-    collusers.delete_one({"_id": callback.from_user.id})
-    await callback.message.answer("Siz muvaffaqiyatli anketangizni o'chirdingiz")
-    await menu(callback.message)
+    try:
+        collusers.delete_one({"_id": callback.from_user.id})
+        await callback.message.answer("Siz muvaffaqiyatli anketangizni o'chirdingiz")
+        await menu(callback.message)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains="cancel")
 async def process_cancel(callback: types.CallbackQuery):
-    await callback.message.answer("Yaxshi, qaytib bunaqa hazil qilmang 😉")
+    try:
+        await callback.message.answer("Yaxshi, qaytib bunaqa hazil qilmang 😉")
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains='channel_subscribe')
 async def channel_affirmative_reg(callback_query: types.CallbackQuery):
-    if await admin_commands.is_authenticated(callback_query):
-        await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
-        await menu(callback_query)
-    else:
-        await callback_query.answer(text="A'zo bo'lmadingiz!", show_alert=True)
+    try:
+        if await admin_commands.is_authenticated(callback_query):
+            await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
+            await menu(callback_query)
+        else:
+            await callback_query.answer(text="A'zo bo'lmadingiz!", show_alert=True)
+    except Exception as e:
+        logging.error(f"CHANNEL SUBSCRIBE XATO: {e}")
 
 
 @dp.callback_query_handler(text_contains="liked")
 async def liked_callback(callback: types.CallbackQuery):
-    await callback.answer("Allaqachon ovoz bergansiz!")
+    try:
+        await callback.answer("Allaqachon ovoz bergansiz!")
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains="yes")
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
-    await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
-    await callback.answer("Keyingisi!")
-    # change reply keyboard and change callback data from keyboard
-    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
-    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
-    # sending new anketa
-    text, photo, tg_id = await send_new_anketa(callback.from_user.id)
-    if tg_id:
-        new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
-        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
-    else:
-        await callback.message.answer_photo(photo=photo, caption=text)
+    try:
+        await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
+        await callback.answer("Keyingisi!")
+        # change reply keyboard and change callback data from keyboard
+        old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+        await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+        # sending new anketa
+        text, photo, tg_id = await send_new_anketa(callback.from_user.id)
+        if tg_id:
+            new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
+            await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+        else:
+            await callback.message.answer_photo(photo=photo, caption=text)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains="no")
 async def yes_callback(callback: types.CallbackQuery):
     # sending callback reaction and answer user # noqa
-    await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
-    await callback.answer("Keyingisi!")
-    # change reply keyboard and change callback data from keyboard
-    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
-    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
-    # sending new anketa
-    text, photo, tg_id = await send_new_anketa(callback.from_user.id)
-    if tg_id:
-        new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
-        await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
-    else:
-        await callback.message.answer_photo(photo=photo, caption=text)
+    try:
+        await send_reaction_func(sender_id=callback.from_user.id, data=callback.data)
+        await callback.answer("Keyingisi!")
+        # change reply keyboard and change callback data from keyboard
+        old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+        await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+        # sending new anketa
+        text, photo, tg_id = await send_new_anketa(callback.from_user.id)
+        if tg_id:
+            new_keyboard = await config.like_keyboard(new=True, user_id=tg_id)
+            await callback.message.answer_photo(photo=photo, caption=text, reply_markup=new_keyboard)
+        else:
+            await callback.message.answer_photo(photo=photo, caption=text)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains="confirm")
 async def confirm_callback(callback: types.CallbackQuery):
     # confirming and refusing callback reaction and answer user
-    action, tg_id = callback.data.split(":")
-    # insert db prqueue query
-    await insert_db_prque(callback.from_user.id, tg_id, True)
-    # insert db prchat query
-    await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
-    await callback.answer("Qabul qilindi!")
-    # sending new message
-    mail_keyboard = await config.send_mail_keyboard(tg_id)
-    another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
-    await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
-    # sending confirmation text from another user
-    acc = collusers.find_one({"_id": callback.from_user.id})
-    photo = acc.get("photo", None)
-    if not photo:
-        photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
-    text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
-           "Foydalanuvchi: {}\n" \
-           "Bio: {}\n" \
-           "Jins: {}\n" \
-           "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
-                                       acc.get("gender", "Ma'lum emas"))
-    await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
-                         reply_markup=another_user_mail_keyboard)
-    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
-    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    try:
+        action, tg_id = callback.data.split(":")
+        # insert db prqueue query
+        await insert_db_prque(callback.from_user.id, tg_id, True)
+        # insert db prchat query
+        await confirm_pr_chat_users(int(tg_id), callback.from_user.id)
+        await callback.answer("Qabul qilindi!")
+        # sending new message
+        mail_keyboard = await config.send_mail_keyboard(tg_id)
+        another_user_mail_keyboard = await config.send_mail_keyboard(str(callback.from_user.id))
+        await callback.message.answer("Siz muvaffaqiyatli qabul qildingiz\nXat yozasizmi?", reply_markup=mail_keyboard)
+        # sending confirmation text from another user
+        acc = collusers.find_one({"_id": callback.from_user.id})
+        photo = acc.get("photo", None)
+        if not photo:
+            photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
+        text = "*Ushbu foydlanuvchi sizni qabul qildi*\n" \
+               "Foydalanuvchi: {}\n" \
+               "Bio: {}\n" \
+               "Jins: {}\n" \
+               "*Javob berasizmi?*".format(acc.get("nickname", "Noma'lum"), acc.get("bio"),
+                                           acc.get("gender", "Ma'lum emas"))
+        await bot.send_photo(int(tg_id), photo, caption=text, parse_mode="Markdown",
+                             reply_markup=another_user_mail_keyboard)
+        old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+        await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(text_contains="refuse")
 async def confirm_callback(callback: types.CallbackQuery):
-    # confirming and refusing callback reaction and answer user
-    action, tg_id = callback.data.split(":")
-    await insert_db_prque(callback.from_user.id, tg_id)
-    await callback.answer("Bekor qilindi!")
-    old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
-    await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    try:
+        # confirming and refusing callback reaction and answer user
+        action, tg_id = callback.data.split(":")
+        await insert_db_prque(callback.from_user.id, tg_id)
+        await callback.answer("Bekor qilindi!")
+        old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
+        await callback.message.edit_reply_markup(reply_markup=old_keyboard)
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.callback_query_handler(lambda call: call.data.startswith("mail"))
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext):
-    action, tg_id = callback.data.split(":")  # noqa
-    await callback.answer("Menga xabar yozing")
-    await Anketa.user_id.set()
-    async with state.proxy() as data:
-        data["user_id"] = tg_id
-    await callback.message.answer("O'z xatingizni yozing",
-                                  reply_markup=await config.send_mail_keyboard(tg_id, cancel=True))
-    # TODO: NEED REALIZE PRCHATS LIST
+    try:
+        action, tg_id = callback.data.split(":")  # noqa
+        await callback.answer("Menga xabar yozing")
+        await Anketa.user_id.set()
+        async with state.proxy() as data:
+            data["user_id"] = tg_id
+        await callback.message.answer("O'z xatingizni yozing",
+                                      reply_markup=await config.send_mail_keyboard(tg_id, cancel=True))
+        # TODO: NEED REALIZE PRCHATS LIST
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 @dp.message_handler(state=Anketa.user_id, content_types=["text", "sticker", "photo",
                                                          "voice", "document", "video", "video_note"])
 async def get_message(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        if data:
-            if message.text == "🚫 Bekor qilish":
-                await message.answer("Bekor qilindi")
+    try:
+        async with state.proxy() as data:
+            if data:
+                if message.text == "🚫 Bekor qilish":
+                    await message.answer("Bekor qilindi")
+                    await menu(message)
+                    return await state.finish()
+                user = collusers.find_one({"_id": message.from_user.id})
+                await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user.get('nickname'))
+                await message.answer("Xatingiz yuborildi!")
                 await menu(message)
-                return await state.finish()
-            user = collusers.find_one({"_id": message.from_user.id})
-            await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user.get('nickname'))
-            await message.answer("Xatingiz yuborildi!")
-            await menu(message)
-            await state.finish()
-        else:
-            await state.finish()
+                await state.finish()
+            else:
+                await state.finish()
+    except Exception as e:
+        logging.error(f"XATOLIK YUZ BERDI: {e}")
 
 
 # @dp.callback_query_handler(state=Anketa.user_id)
