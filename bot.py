@@ -189,7 +189,7 @@ async def confirm_pr_chat_users(first_id: int, second_id: int):
 
 
 @dp.message_handler(commands="main_menu")
-async def menu(message: types.Message or types.CallbackQuery):
+async def menu(message: (types.Message, types.CallbackQuery)):
     keyboard = config.main_menu_keyboard
     await bot.send_message(chat_id=message.from_user.id, text="🏠 Bosh menyu", reply_markup=keyboard)
 
@@ -396,18 +396,18 @@ async def account_user(message: types.Message):
         await message.answer("Siz tizimda hali ro'yxatdan o'tmagansiz", reply_markup=keyboard)
     else:
         acc = collusers.find_one({"_id": message.from_user.id})
-        text = f"*👤Tahallusi*: {acc.get('nickname', 'Mavjud emas')}\n" \
-               f"*💵 Referal*: {acc.get('balance', None)}\n" \
-               f"⭐️Reyting: {acc.get('reputation', None)}\n" \
-               f"*📝Bio*: {acc.get('bio', None)}\n" \
-               f"*👫Jins*: {acc.get('gender', 'Noaniq')}\n" \
-               f"*👫Qidiruv*: {acc.get('finding', 'Noaniq')}"
+        text = f"👤Tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
+               f"💵 Referal: {acc.get('balance', 'Noaniq')}\n" \
+               f"️Reyting: {acc.get('reputation', 'Noaniq')}\n" \
+               f"📝Bio: {acc.get('bio', 'Noaniq')}\n" \
+               f"👫Jins: {acc.get('gender', 'Noaniq')}\n" \
+               f"👫Qidiruv: {acc.get('finding', 'Noaniq')}"
         keyboard = config.anketa_keyboard
         photo = acc.get("photo", None)
         if not photo:
             photo = DEFAULT_WOMAN_PHOTO if acc.get("gender", None) == "👩‍ Ayol kishi" else DEFAULT_MAN_PHOTO
         # await message.answer(text, reply_markup=keyboard)
-        await message.answer_photo(photo, text, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer_photo(photo, text, reply_markup=keyboard)
 
 
 @dp.message_handler(commands=["anketani", "remove_acc", "remove_account"])
@@ -1109,6 +1109,7 @@ async def some_text(message: types.Message):
 
 @dp.callback_query_handler(text_contains="remove")
 async def process_remove_account(callback: types.CallbackQuery):
+    await callback.answer()
     try:
         collusers.delete_one({"_id": callback.from_user.id})
         await callback.message.answer("Siz muvaffaqiyatli anketangizni o'chirdingiz")
@@ -1119,6 +1120,7 @@ async def process_remove_account(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text_contains="cancel")
 async def process_cancel(callback: types.CallbackQuery):
+    await callback.answer()
     try:
         await callback.message.answer("Yaxshi, qaytib bunaqa hazil qilmang 😉")
     except Exception as e:
@@ -1127,6 +1129,7 @@ async def process_cancel(callback: types.CallbackQuery):
 
 @dp.callback_query_handler(text_contains='channel_subscribe')
 async def channel_affirmative_reg(callback_query: types.CallbackQuery):
+    await callback_query.answer()
     try:
         if await admin_commands.is_authenticated(callback_query):
             await bot.delete_message(callback_query.from_user.id, callback_query.message.message_id)
@@ -1141,7 +1144,7 @@ async def channel_affirmative_reg(callback_query: types.CallbackQuery):
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def liked_callback(callback: types.CallbackQuery):
     try:
-        await callback.answer("Allaqachon ovoz bergansiz!")
+        await callback.answer("Ovoz bergansiz")
     except Exception as e:
         logging.error(f"XATOLIK YUZ BERDI: {e}")
 
@@ -1174,7 +1177,7 @@ async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     # confirming and refusing callback reaction and answer user
-    await callback.answer("Qabul qilindi!")
+    await callback.answer("Qabul qilindi")
     try:
         # action = callback_data['action']
         tg_id = callback_data['id']
@@ -1208,7 +1211,7 @@ async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.
 @dp.callback_query_handler(config.confirm_cb.filter(action=['refuse']))
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
-    await callback.answer("Bekor qilindi!")
+    await callback.answer("Bekor qilindi")
     try:
         # confirming and refusing callback reaction and answer user
         # action = callback_data['action']
@@ -1222,10 +1225,11 @@ async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.
 
 @dp.callback_query_handler(config.mail_cb.filter(action=['mail']))
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext, callback_data: typing.Dict[str, str]):
+    await callback.answer()
     try:
         # action = callback_data['action']
         tg_id = callback_data['id']
-        await callback.answer("Menga xabar yozing")
+        # await callback.answer("Menga xabar yozing")
         await Anketa.user_id.set()
         async with state.proxy() as data:
             data["user_id"] = tg_id
@@ -1274,13 +1278,13 @@ async def get_message(message: types.Message, state: FSMContext):
 @dp.callback_query_handler()
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def any_callback_answer(callback: types.CallbackQuery):
-    await callback.answer("Biroz kuting...")
+    await callback.answer("Biroz kuting")
 
 
 @dp.message_handler()
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def any_message_answer(message: types.Message):
-    await message.answer("Biroz kuting...")
+    await message.answer("Biroz kuting")
 
 
 @dp.errors_handler(exception=MessageNotModified)
