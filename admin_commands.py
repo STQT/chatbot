@@ -96,7 +96,7 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_voice(chat_id=i, voice=data['voice'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'text':
@@ -113,7 +113,7 @@ async def send_post_all_users(data, users):
                     resize_keyboard=True
                 )
                 await bot.send_message(chat_id=i, text=data['text'], entities=data['entities'], reply_markup=keyboard)
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'video':
@@ -121,7 +121,7 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_video(chat_id=i, video=data['video'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'photo':
@@ -129,14 +129,14 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_photo(chat_id=i, photo=data['photo'], caption=data['caption'],
                                      caption_entities=data['caption_entities'])
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'sticker':
         for i in users:
             try:
                 await bot.send_sticker(chat_id=i, sticker=data['sticker'])
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'document':
@@ -144,7 +144,7 @@ async def send_post_all_users(data, users):
             try:
                 await bot.send_document(chat_id=i, document=data['document'], caption=data['caption'],
                                         caption_entities=data['caption_entities'])
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
     elif data['type'] == 'forward':
@@ -152,7 +152,7 @@ async def send_post_all_users(data, users):
             try:
                 await bot.forward_message(chat_id=i, from_chat_id=data['message'].forward_from_chat.id,
                                           message_id=data['message'].forward_from_message_id)
-                await asyncio.sleep(0.04)
+                await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
 
