@@ -993,6 +993,7 @@ async def taklif_process(message: types.Message, state: FSMContext):
 
 
 @dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
+@dp.throttled(rate=5)
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
     # if message.photo:
