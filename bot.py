@@ -151,29 +151,22 @@ async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: boo
         user_nickname = "Foydalanuvchi *{}* dan xat:\n".format(nickname)
         reply = await config.send_mail_keyboard(message.from_user.id)
 
-    # change capiton text if anketa sender
-    if message.caption:
-        caption_text = (user_nickname + message.caption) if user_nickname else message.caption
-    else:
-        caption_text = user_nickname if user_nickname else None
     if message.text:
         await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text) if user_nickname else message.text,
                                entities=message.entities, reply_markup=reply, parse_mode="Markdown")
-    elif message.forward_from_chat:
-        await bot.forward_message(message.from_user.id, message.forward_from_chat.id, message.forward_from_message_id)
     elif message.voice:
         await bot.send_voice(chat_id=tg_id, voice=message.voice.file_id,
-                             caption=caption_text,
+                             caption=message.caption,
                              caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.video:
         await bot.send_video(chat_id=tg_id, video=message.video,
-                             caption=caption_text,
+                             caption=message.caption,
                              caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.photo:
         await bot.send_photo(chat_id=tg_id, photo=message.photo[-1].file_id,
-                             caption=caption_text,
+                             caption=message.caption,
                              caption_entities=message.caption_entities,
                              reply_markup=reply, parse_mode="Markdown")
     elif message.sticker:
@@ -185,7 +178,7 @@ async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: boo
     elif message.document:
         await bot.send_document(chat_id=tg_id, document=message.document.file_id,
                                 caption_entities=message.caption_entities,
-                                caption=caption_text,
+                                caption=message.caption,
                                 reply_markup=reply, parse_mode="Markdown")
 
 
