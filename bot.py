@@ -1152,9 +1152,9 @@ async def liked_callback(callback: types.CallbackQuery):
 @dp.callback_query_handler(config.vote_cb.filter(action=['yes', 'no']))
 async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     try:
-        await dp.throttle('vote', rate=1)
+        await dp.throttle('vote', rate=4)
     except Throttled:
-        return await callback.answer('Juda kop bosdingiz')
+        return await callback.answer('Sabr qil')
     await callback.answer()
     # sending callback reaction and answer user
     try: # noqa
@@ -1177,6 +1177,10 @@ async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     # confirming and refusing callback reaction and answer user
+    try:
+        await dp.throttle('confirm', rate=4)
+    except Throttled:
+        return await callback.answer('Sabr qil')
     await callback.answer("Qabul qilindi")
     try:
         # action = callback_data['action']
@@ -1211,6 +1215,10 @@ async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.
 @dp.callback_query_handler(config.confirm_cb.filter(action=['refuse']))
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
+    try:
+        await dp.throttle('confirm', rate=4)
+    except Throttled:
+        return await callback.answer('Sabr qil')
     await callback.answer("Bekor qilindi")
     try:
         # confirming and refusing callback reaction and answer user
@@ -1225,6 +1233,10 @@ async def confirm_callback(callback: types.CallbackQuery, callback_data: typing.
 
 @dp.callback_query_handler(config.mail_cb.filter(action=['mail']))
 async def mail_callback(callback: types.CallbackQuery, state: FSMContext, callback_data: typing.Dict[str, str]):
+    try:
+        await dp.throttle('mail', rate=4)
+    except Throttled:
+        return await callback.answer('Sabr qil')
     await callback.answer()
     try:
         # action = callback_data['action']
@@ -1276,13 +1288,13 @@ async def get_message(message: types.Message, state: FSMContext):
 
 
 @dp.callback_query_handler()
-@dp.throttled(on_throttled=handler_throttled, rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=4)
 async def any_callback_answer(callback: types.CallbackQuery):
     await callback.answer("Biroz kuting")
 
 
 @dp.message_handler()
-@dp.throttled(on_throttled=handler_throttled, rate=1)
+@dp.throttled(on_throttled=handler_throttled, rate=4)
 async def any_message_answer(message: types.Message):
     await message.answer("Biroz kuting")
 
