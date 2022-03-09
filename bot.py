@@ -994,7 +994,8 @@ async def taklif_process(message: types.Message, state: FSMContext):
         await message.answer("Yuborish kerakmi?", reply_markup=keyboard)
 
 
-@dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note"])
+@dp.message_handler(content_types=["text", "sticker", "photo", "voice", "document", "video", "video_note", "animation"])
+@dp.edited_message_handler()
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def some_text(message: types.Message):
     chat = collchats.find_one({"user_chat_id": message.chat.id})
@@ -1098,6 +1099,13 @@ async def some_text(message: types.Message):
                     await bot.send_video_note(
                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
                         video_note=message.video_note["file_id"])
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    await admin_commands.user_are_blocked_bot(message)
+            elif message.content_type == "animation":
+                try:
+                    await bot.send_animation(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        animation=message.document["file_id"])
                 except (BotKicked, BotBlocked, UserDeactivated):
                     await admin_commands.user_are_blocked_bot(message)
         else:
