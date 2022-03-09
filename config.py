@@ -25,6 +25,8 @@ channel_urls_dict = ({
                      },
 )
 
+ban_seconds = 86400
+
 cities = ("Toshkent", "Andijon", "Buxoro",
           "Jizzax", "Sirdaryo", "Qoraqalpogʻiston",
           "Xorazm", "Navoiy", "Namangan",
@@ -178,6 +180,7 @@ async def get_message_data_for_fsm(message: types.Message, data: FSMContext.prox
         data['caption'] = message.caption
         data['caption_entities'] = message.caption_entities
         return data
+
 
 BOT_TOKEN = os.environ.get("davrabot")
 MONGO_URL = os.environ.get("davra_db")
