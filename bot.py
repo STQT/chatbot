@@ -1003,7 +1003,7 @@ async def taklif_process(message: types.Message, state: FSMContext):
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def some_text(message: types.Message):
     if message.text == "💔 Suhbatni yakunlash":
-        await leave_from_chat_act(message)
+        return await leave_from_chat_act(message)
 
     elif message.text == "👍 Ha":
         return await yes_rep_act(message)
