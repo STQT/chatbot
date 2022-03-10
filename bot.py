@@ -1006,54 +1006,53 @@ async def some_text(message: types.Message):
         await leave_from_chat_act(message)
 
     elif message.text == "👍 Ha":
-        await yes_rep_act(message)
+        return await yes_rep_act(message)
     elif message.text == "👎 Yo'q":
-        await no_rep_act(message)
+        return await no_rep_act(message)
     elif message.text == "🗣 Shikoyat berish":
-        await report_rep_act(message)
+        return await report_rep_act(message)
     elif message.text == "📛 Izlashni to'xtatish":
-        await stop_search_act(message)
+        return await stop_search_act(message)
     elif message.text == "ℹ️ Qo'llanma":
-        await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
-                             "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
+        return await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
+                                    "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
+    elif message.text == "🗣 Takliflar":
+        return await message.answer("Ushbu buyruq hozirda mavjud emas\n"
+                                    "/start ni bosing")
+    elif message.text == "📝 Ro'yxatdan o'tish":
+        return await account_registration_act(message)
+    elif message.text == "🗣 Do'stlarga ulashish":
+        return await referal_link(message)
+    elif message.text == "✏ Jins":
+        return await user_gender(message)
+    elif message.text == "✏ Kim bilan suxbatlashish?":
+        return await user_finding(message)
+    elif message.text == "✏ Tahallusni o'zgartirish":
+        return await user_tahallus(message)
+    elif message.text == "✏ Bio":
+        return await user_bio(message)
+    elif message.text == "✏ Haqimda":
+        return await user_bio_change(message)
+    elif message.text == "🖼 Suratni alishtirish":
+        return await user_photo(message)
+    elif message.text == "🚫 Bekor qilish":
+        return await menu(message)
     if collbans.count_documents({"id": message.from_user.id}) < 4:
         chat = collchats.find_one({"user_chat_id": message.chat.id})
         # if message.photo:
         #     await message.answer(message.photo[-1].file_id)
         if message.text == "☕ Anketalardan izlash":
-            await search_anketa(message)
-        elif message.text == "🗣 Takliflar":
-            await taklif_user_message(message)
+            return await search_anketa(message)
         elif message.text == "🏠 Bosh menyu":
-            await menu(message)
+            return await menu(message)
         # elif message.text == "💣 Anketani o'chirish":
         #     await remove_account_act(message)
         elif message.text == "☕️ Tasodifiy suhbatdosh":
-            await search_user_act(message)
-        elif message.text == "📝 Ro'yxatdan o'tish":
-            await account_registration_act(message)
+            return await search_user_act(message)
         elif message.text == "🔖 Anketa":
-            await account_user(message)
-        elif message.text == "🗣 Do'stlarga ulashish":
-            await referal_link(message)
+            return await account_user(message)
         elif message.text == "🏠 Bosh menyu":
-            await menu(message)
-        elif message.text == "💣 Anketani o'chirish":
-            await remove_account_act(message)
-        elif message.text == "✏ Jins":
-            await user_gender(message)
-        elif message.text == "✏ Kim bilan suxbatlashish?":
-            await user_finding(message)
-        elif message.text == "✏ Tahallusni o'zgartirish":
-            await user_tahallus(message)
-        elif message.text == "✏ Bio":
-            await user_bio(message)
-        elif message.text == "✏ Haqimda":
-            await user_bio_change(message)
-        elif message.text == "🖼 Suratni alishtirish":
-            await user_photo(message)
-        elif message.text == "🚫 Bekor qilish":
-            await menu(message)
+            return await menu(message)
         elif chat:
             if message.content_type == "text":
                 try:
