@@ -6,7 +6,6 @@ import admin_commands
 import config
 
 from config import BOT_TOKEN, MONGO_URL
-from utils import get_random_boy_anketa, get_random_girl_anketa
 
 import typing
 from aiogram import Bot, Dispatcher, types, executor
@@ -79,6 +78,20 @@ async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
         "like": like
     })
     return True
+
+
+async def get_random_boy_anketa(liked_user_list):
+    finded_docs = collusers.find({"gender": {"$nin": ["👩‍ Ayol kishi"]}})
+    for i in finded_docs:
+        if i and i.get('_id', None) not in liked_user_list and i.get('status', True):
+            return i
+
+
+async def get_random_girl_anketa(liked_user_list):
+    finded_docs = collusers.find({"gender": {"$in": ["👩‍ Ayol kishi"]}})
+    for i in finded_docs:
+        if i and i.get('_id', None) not in liked_user_list and i.get('status', True):
+            return i
 
 
 async def send_reaction_func(sender_id: int, callback_data: typing.Dict[str, str]):
