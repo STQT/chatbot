@@ -303,11 +303,14 @@ async def user_tahallus(message: types.Message):
 
 @dp.message_handler(commands=["photo_set", "photo", "set_photo"])
 async def user_photo(message: types.Message):
+    keyboard = ReplyKeyboardMarkup(
+        [[KeyboardButton("✖️Bekor qilish"),
+          ]], resize_keyboard=True, one_time_keyboard=True)
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
         await account_user(message)
     else:
         await SetBio.photo.set()
-        await message.answer("Iltimos, bironta siz bilan bog'liq rasm yuboring")
+        await message.answer("Iltimos, bironta siz bilan bog'liq rasm yuboring", reply_markup=keyboard)
 
 
 @dp.message_handler(state=SetBio.nickname)
@@ -382,8 +385,14 @@ async def process_set_gender(message: types.Message, state: FSMContext):
         await account_user(message)
 
 
-@dp.message_handler(state=SetBio.photo, content_types=["photo"])
+@dp.message_handler(state=SetBio.photo, content_types=["photo", "text"])
 async def process_set_photo(message: types.Message, state: FSMContext):
+    if message.text == "✖️Bekor qilish":
+        await state.finish()
+        await message.answer("Bekor qilindi")
+        return await menu(message)
+    elif message.text:
+        return await message.answer("Iltimos faqat rasm yuboring yoki bekor qiling")
     async with state.proxy() as data:
         data["user_photo"] = message.photo[-1].file_id
         collusers.update_one({"_id": message.from_user.id}, {
@@ -482,16 +491,21 @@ async def process_send_post(message: types.Message, state: FSMContext):
     if message.text == "☑️Yuborish":
         data = await state.get_data()
         users = await admin_commands.get_all_active_users()
-        await admin_commands.send_post_all_users(data, users)
+        sending = await admin_commands.send_post_all_users(data, users)
+        if sending:
+            await message.answer("Barchaga post muvaffaqiyatli yuborildi.")
         await state.finish()
         await menu(message)
     elif message.text == "✖️Bekor qilish":
         await state.finish()
+        await message.answer("Bekor qilindi")
         await menu(message)
     elif message.text == "☑️Faol emaslarga":
         data = await state.get_data()
         users = await admin_commands.get_all_inactive_users()
-        await admin_commands.send_post_all_users(data, users)
+        sending = await admin_commands.send_post_all_users(data, users)
+        if sending:
+            await message.answer("Faol emaslarga post muvaffaqiyatli yuborildi.")
         await state.finish()
         await menu(message)
     else:
@@ -1047,7 +1061,7 @@ async def some_text(message: types.Message):
         return await user_bio_change(message)
     elif message.text == "🖼 Suratni alishtirish":
         return await user_photo(message)
-    elif message.text == "🚫 Bekor qilish":
+    elif message.text == "🚫 Bekor qilish" or message.text == "✖️Bekor qilish":
         return await menu(message)
     if collbans.count_documents({"id": message.from_user.id}) < 4:
         chat = collchats.find_one({"user_chat_id": message.chat.id})

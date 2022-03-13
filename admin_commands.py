@@ -155,6 +155,7 @@ async def send_post_all_users(data, users):
                 await asyncio.sleep(0.1)
             except (BotKicked, BotBlocked, UserDeactivated):
                 await user_blocked_with_posting(i)
+    return True
 
 
 async def user_are_blocked_bot(message):
