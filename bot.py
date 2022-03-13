@@ -1146,7 +1146,7 @@ async def some_text(message: types.Message):
         ban_time = collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
         current_time = message.date.timestamp()
         time_has_passed_seconds = current_time - ban_time
-        active_time = ban_time + config.ban_seconds
+        active_time = ban_time + config.ban_seconds + 18000   # UTC +5
         if time_has_passed_seconds < config.ban_seconds:
             await message.answer("*Ma'muriyat:*\n"
                                  "Siz juda ko'p shikoyat olganingiz uchun botdan biroz muddat foydalana olmaysiz\n\n"
