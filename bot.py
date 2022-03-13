@@ -209,7 +209,7 @@ async def menu(message: (types.Message, types.CallbackQuery)):
 
 
 @dp.message_handler(commands="start")
-@dp.throttled(on_throttled=handler_throttled, rate=5)
+@dp.throttled(on_throttled=handler_throttled, rate=2)
 async def start_menu(message: types.Message):
     keyboard = config.main_menu_keyboard
     if collusers.count_documents({"_id": message.from_user.id}) == 0:
@@ -1193,7 +1193,7 @@ async def liked_callback(callback: types.CallbackQuery):
 @dp.callback_query_handler(config.vote_cb.filter(action=['yes', 'no']))
 async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     try:
-        await dp.throttle('vote', rate=4)
+        await dp.throttle('vote', rate=2)
     except Throttled:
         return await callback.answer('Sabr qil')
     await callback.answer()
