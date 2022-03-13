@@ -2,6 +2,12 @@ import asyncio
 import datetime
 import logging
 
+import admin_commands
+import config
+
+from config import BOT_TOKEN, MONGO_URL
+from utils import get_random_boy_anketa, get_random_girl_anketa
+
 import typing
 from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
@@ -12,10 +18,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
-import admin_commands
-import config
 
-from config import BOT_TOKEN, MONGO_URL
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
@@ -119,14 +122,10 @@ async def search_random_anketa(user_id: int):
     for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
     if acc.get("gender", None) == "👩‍ Ayol kishi":
-        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
-                                       "gender": {"$nin": ["👩‍ Ayol kishi"]},
-                                       "status": {"$nin": [False]}})
+        finded_doc = await get_random_boy_anketa(liked_user_list)
     else:
-        find_doc = collusers.find_one({"_id": {"$nin": liked_user_list},
-                                       "gender": {"$in": ["👩‍ Ayol kishi"]},
-                                       "status": {"$nin": [False]}})
-    return find_doc
+        finded_doc = await get_random_girl_anketa(liked_user_list)
+    return finded_doc
 
 
 async def send_new_anketa(user_id: int):
