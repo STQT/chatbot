@@ -160,7 +160,7 @@ async def send_post_all_users(data, users):
 async def user_are_blocked_bot(message):
     keyboard = ReplyKeyboardMarkup(
         [
-            [KeyboardButton("☕️ Suhbatdosh izlash")],
+            [KeyboardButton("☕️ Tasodifiy suhbatdosh")],
             [KeyboardButton("🔖 Anketa")]
         ], resize_keyboard=True)
     await message.answer("Ushbu foydalanuvchi botni tark etdi :( Boshqa suhbatdoshni qidiring!", reply_markup=keyboard)
