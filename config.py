@@ -19,7 +19,7 @@ logging.basicConfig(
 admin_ids = 256665985, 390736292, 531409948, 556739283
 group_id = -650304675
 channel_urls_dict = ({
-                         "title": "Мозийга бир назар",
+                         "title": "A'zo bo'lish",
                          "link": "https://t.me/+ZwCfAKCjmeFkNmNi",
                          "username": "@moziy_nazar"
                      },
