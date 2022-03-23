@@ -136,7 +136,7 @@ async def send_mail_keyboard(user_id: str = None, cancel: bool = False) -> (Inli
         return InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton("📤", callback_data=mail_cb.new(id=user_id, action="mail"))
+                    InlineKeyboardButton("📤 Xabar yozish", callback_data=mail_cb.new(id=user_id, action="mail"))
                 ]
             ],
         )
