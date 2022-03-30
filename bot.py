@@ -1035,6 +1035,8 @@ async def some_text(message: types.Message):
         return await yes_rep_act(message)
     elif message.text == "👎 Yo'q":
         return await no_rep_act(message)
+    elif message.text == "👩‍🦱 Qiz suhbatdosh izlash":
+        return await search_girl_act(message)
     elif message.text == "🗣 Shikoyat berish":
         return await report_rep_act(message)
     elif message.text == "📛 Izlashni to'xtatish":

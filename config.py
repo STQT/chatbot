@@ -58,7 +58,7 @@ city_keyboard = ReplyKeyboardMarkup(
 main_menu_keyboard = ReplyKeyboardMarkup(
     [
         [KeyboardButton("☕️ Tasodifiy suhbatdosh")],
-        # [KeyboardButton("☕ Anketalardan izlash")],
+        [KeyboardButton("👩‍🦱 Qiz suhbatdosh izlash")],
         [KeyboardButton("☕ Anketalardan izlash")],
         [KeyboardButton("🔖 Anketa"),
          KeyboardButton("ℹ️ Qo'llanma")]
