@@ -167,33 +167,32 @@ async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: boo
 
     if message.text:
         await bot.send_message(chat_id=tg_id, text=(user_nickname + message.text) if user_nickname else message.text,
-                               entities=message.entities, reply_markup=reply, parse_mode="Markdown")
+                               entities=message.entities, reply_markup=reply)
     elif message.voice:
         await bot.send_voice(chat_id=tg_id, voice=message.voice.file_id,
                              caption=message.caption,
                              caption_entities=message.caption_entities,
-                             reply_markup=reply, parse_mode="Markdown")
+                             reply_markup=reply)
     elif message.video:
         await bot.send_video(chat_id=tg_id, video=message.video,
                              caption=message.caption,
                              caption_entities=message.caption_entities,
-                             reply_markup=reply, parse_mode="Markdown")
+                             reply_markup=reply)
     elif message.photo:
         await bot.send_photo(chat_id=tg_id, photo=message.photo[-1].file_id,
                              caption=message.caption,
                              caption_entities=message.caption_entities,
-                             reply_markup=reply, parse_mode="Markdown")
+                             reply_markup=reply)
     elif message.sticker:
         if anketa:
-            await bot.send_message(chat_id=tg_id, text=f"Ushbu *{nickname}* foydalanuvchi sizga stiker jo'natdi",
-                                   parse_mode="Markdown")
+            await bot.send_message(chat_id=tg_id, text=f"Ushbu *{nickname}* foydalanuvchi sizga stiker jo'natdi")
         await bot.send_sticker(chat_id=tg_id, sticker=message.sticker.file_id)
 
     elif message.document:
         await bot.send_document(chat_id=tg_id, document=message.document.file_id,
                                 caption_entities=message.caption_entities,
                                 caption=message.caption,
-                                reply_markup=reply, parse_mode="Markdown")
+                                reply_markup=reply)
 
 
 async def confirm_pr_chat_users(first_id: int, second_id: int):
