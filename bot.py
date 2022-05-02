@@ -898,7 +898,7 @@ async def all_stats_info(message: types.Message):
           f"     *Users*   \n{user_stats}\n\n" \
           f"     *Chats* \nAll:{len(chat_all_list) - len(chat_block_list)}\n" \
           f"     *Queue's*  \n{queue_stats}"
-    await message.answer(msg, parse_mode="MarkdownV2")
+    await message.answer(msg, parse_mode="Markdown")
 
 
 @dp.message_handler(commands=["yakunlash", "leave", "leave_chat"])
