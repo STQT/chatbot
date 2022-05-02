@@ -5,7 +5,7 @@ import logging
 import admin_commands
 import config
 
-from config import BOT_TOKEN, MONGO_URL
+from config import BOT_TOKEN
 
 import typing
 from aiogram import Bot, Dispatcher, types, executor
@@ -22,7 +22,14 @@ from pymongo import MongoClient
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
-cluster = MongoClient(MONGO_URL)
+
+class Connect(object):
+    @staticmethod
+    def get_connection():
+        return MongoClient("mongodb://127.0.0.1:27017/chatbot")
+
+
+cluster = Connect.get_connection()
 collqueue = cluster.chatbot.queue
 collusers = cluster.chatbot.users
 collchats = cluster.chatbot.chats
@@ -1027,141 +1034,140 @@ async def taklif_process(message: types.Message, state: FSMContext):
 @dp.edited_message_handler()
 @dp.throttled(on_throttled=handler_throttled, rate=1)
 async def some_text(message: types.Message):
-    # if message.text == "💔 Suhbatni yakunlash":
-    #     return await leave_from_chat_act(message)
-    #
-    # elif message.text == "👍 Ha":
-    #     return await yes_rep_act(message)
-    # elif message.text == "👎 Yo'q":
-    #     return await no_rep_act(message)
-    # elif message.text == "👩‍🦱 Qiz suhbatdosh izlash":
-    #     return await search_girl_act(message)
-    # elif message.text == "🗣 Shikoyat berish":
-    #     return await report_rep_act(message)
-    # elif message.text == "📛 Izlashni to'xtatish":
-    #     return await stop_search_act(message)
-    # elif message.text == "ℹ️ Qo'llanma":
-    #     return await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
-    #                                 "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
-    # elif message.text == "🗣 Takliflar":
-    #     return await message.answer("Ushbu buyruq hozirda mavjud emas\n"
-    #                                 "/start ni bosing")
-    # elif message.text == "📝 Ro'yxatdan o'tish":
-    #     return await account_registration_act(message)
-    # elif message.text == "🗣 Do'stlarga ulashish":
-    #     return await referal_link(message)
-    # elif message.text == "✏ Jins":
-    #     return await user_gender(message)
-    # elif message.text == "✏ Kim bilan suxbatlashish?":
-    #     return await user_finding(message)
-    # elif message.text == "✏ Tahallusni o'zgartirish":
-    #     return await user_tahallus(message)
-    # elif message.text == "✏ Bio":
-    #     return await user_bio(message)
-    # elif message.text == "✏ Haqimda":
-    #     return await user_bio_change(message)
-    # elif message.text == "🖼 Suratni alishtirish":
-    #     return await user_photo(message)
-    # elif message.text == "🚫 Bekor qilish" or message.text == "✖️Bekor qilish":
-    #     return await menu(message)
-    # if collbans.count_documents({"id": message.from_user.id}) < 4:
-    #     chat = collchats.find_one({"user_chat_id": message.chat.id})
-    #     # if message.photo:
-    #     #     await message.answer(message.photo[-1].file_id)
-    #     if message.text == "☕ Anketalardan izlash":
-    #         return await search_anketa(message)
-    #     elif message.text == "🏠 Bosh menyu":
-    #         return await menu(message)
-    #     # elif message.text == "💣 Anketani o'chirish":
-    #     #     await remove_account_act(message)
-    #     elif message.text == "☕️ Tasodifiy suhbatdosh":
-    #         return await search_user_act(message)
-    #     elif message.text == "🔖 Anketa":
-    #         return await account_user(message)
-    #     elif message.text == "🏠 Bosh menyu":
-    #         return await menu(message)
-    #     elif chat:
-    #         if message.content_type == "text":
-    #             try:
-    #                 await bot.send_message(
-    #                     chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                     text=message.text, entities=message.entities)
-    #             except (BotKicked, BotBlocked, UserDeactivated):
-    #                 await admin_commands.user_are_blocked_bot(message)
-    #         elif chat.get("status", True):
-    #             if message.content_type == "sticker":
-    #                 try:
-    #                     await bot.send_sticker(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         sticker=message.sticker["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "photo":
-    #                 try:
-    #                     await bot.send_photo(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         photo=message.photo[len(message.photo) - 1].file_id)
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "voice":
-    #                 try:
-    #                     await bot.send_voice(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         voice=message.voice["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "document":
-    #                 try:
-    #                     await bot.send_document(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         document=message.document["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "video":
-    #                 try:
-    #                     await bot.send_video(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         video=message.video["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "video_note":
-    #                 try:
-    #                     await bot.send_video_note(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         video_note=message.video_note["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #             elif message.content_type == "animation":
-    #                 try:
-    #                     await bot.send_animation(
-    #                         chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
-    #                         animation=message.document["file_id"])
-    #                 except (BotKicked, BotBlocked, UserDeactivated):
-    #                     await admin_commands.user_are_blocked_bot(message)
-    #         else:
-    #             keyboard = ReplyKeyboardMarkup(
-    #                 [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")],
-    #                  [KeyboardButton("🗣 Shikoyat berish")]], resize_keyboard=True)
-    #             await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
-    # else:
-    #     ban_time = collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
-    #     current_time = message.date.timestamp()
-    #     time_has_passed_seconds = current_time - ban_time
-    #     active_time = ban_time + config.ban_seconds + 18000   # UTC +5
-    #     if time_has_passed_seconds < config.ban_seconds:
-    #         await message.answer("*Ma'muriyat:*\n"
-    #                              "Siz juda ko'p shikoyat olganingiz uchun botdan biroz muddat foydalana olmaysiz\n\n"
-    #                              f"Faol bo'lish vaqti: *{datetime.datetime.fromtimestamp(active_time)}*",
-    #                              parse_mode="Markdown")
-    #     else:
-    #         await asyncio.sleep(1)
-    #         await message.answer("Blokdan chiqish jarayoni... ⏳")
-    #         await asyncio.sleep(2)
-    #         collbans.delete_many({"id": message.from_user.id})
-    #         await asyncio.sleep(2)
-    #         await message.answer("Siz muvaffaqiyatli blokdan chiqdingiz!\n"
-    #                              "Iltimos qoidalarni buzmang😉")
-    await message.answer("Bot yangilanmoqda biroz kuting!")
+    if message.text == "💔 Suhbatni yakunlash":
+        return await leave_from_chat_act(message)
+
+    elif message.text == "👍 Ha":
+        return await yes_rep_act(message)
+    elif message.text == "👎 Yo'q":
+        return await no_rep_act(message)
+    elif message.text == "👩‍🦱 Qiz suhbatdosh izlash":
+        return await search_girl_act(message)
+    elif message.text == "🗣 Shikoyat berish":
+        return await report_rep_act(message)
+    elif message.text == "📛 Izlashni to'xtatish":
+        return await stop_search_act(message)
+    elif message.text == "ℹ️ Qo'llanma":
+        return await message.answer("[Ushbu maqola qisqacha bot haqida tushuncha berib o'tilgan]"
+                                    "(https://telegra.ph/Davra-uz--Yoriqnoma-03-05)", parse_mode="Markdown")
+    elif message.text == "🗣 Takliflar":
+        return await message.answer("Ushbu buyruq hozirda mavjud emas\n"
+                                    "/start ni bosing")
+    elif message.text == "📝 Ro'yxatdan o'tish":
+        return await account_registration_act(message)
+    elif message.text == "🗣 Do'stlarga ulashish":
+        return await referal_link(message)
+    elif message.text == "✏ Jins":
+        return await user_gender(message)
+    elif message.text == "✏ Kim bilan suxbatlashish?":
+        return await user_finding(message)
+    elif message.text == "✏ Tahallusni o'zgartirish":
+        return await user_tahallus(message)
+    elif message.text == "✏ Bio":
+        return await user_bio(message)
+    elif message.text == "✏ Haqimda":
+        return await user_bio_change(message)
+    elif message.text == "🖼 Suratni alishtirish":
+        return await user_photo(message)
+    elif message.text == "🚫 Bekor qilish" or message.text == "✖️Bekor qilish":
+        return await menu(message)
+    if collbans.count_documents({"id": message.from_user.id}) < 4:
+        chat = collchats.find_one({"user_chat_id": message.chat.id})
+        # if message.photo:
+        #     await message.answer(message.photo[-1].file_id)
+        if message.text == "☕ Anketalardan izlash":
+            return await search_anketa(message)
+        elif message.text == "🏠 Bosh menyu":
+            return await menu(message)
+        # elif message.text == "💣 Anketani o'chirish":
+        #     await remove_account_act(message)
+        elif message.text == "☕️ Tasodifiy suhbatdosh":
+            return await search_user_act(message)
+        elif message.text == "🔖 Anketa":
+            return await account_user(message)
+        elif message.text == "🏠 Bosh menyu":
+            return await menu(message)
+        elif chat:
+            if message.content_type == "text":
+                try:
+                    await bot.send_message(
+                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        text=message.text, entities=message.entities)
+                except (BotKicked, BotBlocked, UserDeactivated):
+                    await admin_commands.user_are_blocked_bot(message)
+            elif chat.get("status", True):
+                if message.content_type == "sticker":
+                    try:
+                        await bot.send_sticker(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            sticker=message.sticker["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "photo":
+                    try:
+                        await bot.send_photo(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            photo=message.photo[len(message.photo) - 1].file_id)
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "voice":
+                    try:
+                        await bot.send_voice(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            voice=message.voice["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "document":
+                    try:
+                        await bot.send_document(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            document=message.document["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "video":
+                    try:
+                        await bot.send_video(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            video=message.video["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "video_note":
+                    try:
+                        await bot.send_video_note(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            video_note=message.video_note["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+                elif message.content_type == "animation":
+                    try:
+                        await bot.send_animation(
+                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            animation=message.document["file_id"])
+                    except (BotKicked, BotBlocked, UserDeactivated):
+                        await admin_commands.user_are_blocked_bot(message)
+            else:
+                keyboard = ReplyKeyboardMarkup(
+                    [[KeyboardButton("👍 Ha"), KeyboardButton("👎 Yo'q")],
+                     [KeyboardButton("🗣 Shikoyat berish")]], resize_keyboard=True)
+                await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
+    else:
+        ban_time = collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
+        current_time = message.date.timestamp()
+        time_has_passed_seconds = current_time - ban_time
+        active_time = ban_time + config.ban_seconds + 18000   # UTC +5
+        if time_has_passed_seconds < config.ban_seconds:
+            await message.answer("*Ma'muriyat:*\n"
+                                 "Siz juda ko'p shikoyat olganingiz uchun botdan biroz muddat foydalana olmaysiz\n\n"
+                                 f"Faol bo'lish vaqti: *{datetime.datetime.fromtimestamp(active_time)}*",
+                                 parse_mode="Markdown")
+        else:
+            await asyncio.sleep(1)
+            await message.answer("Blokdan chiqish jarayoni... ⏳")
+            await asyncio.sleep(2)
+            collbans.delete_many({"id": message.from_user.id})
+            await asyncio.sleep(2)
+            await message.answer("Siz muvaffaqiyatli blokdan chiqdingiz!\n"
+                                 "Iltimos qoidalarni buzmang😉")
 
 
 @dp.callback_query_handler(text_contains="remove")
