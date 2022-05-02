@@ -9,7 +9,7 @@ from bot import collusers, collqueue, collchats, bot
 
 
 async def user_statistics():
-    x = collusers.find()
+    x = collusers.find({"status": True})
     user_list = [a for a in x]
     ladys_list = []
     mans_list = []

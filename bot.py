@@ -1,26 +1,25 @@
 import asyncio
 import datetime
 import logging
-
-import admin_commands
-import config
-
-from config import BOT_TOKEN
-
 import typing
+
 from aiogram import Bot, Dispatcher, types, executor
+from aiogram.contrib.fsm_storage.mongo import MongoStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated, Throttled, MessageNotModified
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
 from pymongo import MongoClient
 
+import admin_commands
+import config
+from config import BOT_TOKEN
 
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
+storage = MongoStorage(host='localhost', port=27017, db_name='aiogram_fsm')
+dp = Dispatcher(bot, storage=storage)
 
 
 class Connect(object):
@@ -1154,7 +1153,7 @@ async def some_text(message: types.Message):
         ban_time = collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
         current_time = message.date.timestamp()
         time_has_passed_seconds = current_time - ban_time
-        active_time = ban_time + config.ban_seconds + 18000   # UTC +5
+        active_time = ban_time + config.ban_seconds + 18000  # UTC +5
         if time_has_passed_seconds < config.ban_seconds:
             await message.answer("*Ma'muriyat:*\n"
                                  "Siz juda ko'p shikoyat olganingiz uchun botdan biroz muddat foydalana olmaysiz\n\n"
@@ -1220,7 +1219,7 @@ async def yes_callback(callback: types.CallbackQuery, callback_data: typing.Dict
         return await callback.answer('Sabr qil')
     await callback.answer()
     # sending callback reaction and answer user
-    try: # noqa
+    try:  # noqa
         await send_reaction_func(sender_id=callback.from_user.id, callback_data=callback_data)
         # change reply keyboard and change callback data from keyboard
         old_keyboard = await config.like_keyboard(user_id=callback.from_user.id)
@@ -1365,9 +1364,20 @@ async def any_message_answer(message: types.Message):
 @dp.errors_handler(exception=MessageNotModified)
 async def message_not_modified_handler(update, error):
     logging.error(f"MESSAGE NOT MODIFIED: {update}\n{error}")
-    return True # errors_handler must return True if error was handled correctly
+    return True  # errors_handler must return True if error was handled correctly
+
+
+async def bot_on_startup(dp):
+    print("Bot ishga tushirilmoqda...")
+    print(await bot.get_me())
+    return True
+
+
+async def bot_on_shutdown(dp):
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+    logging.info("Bot are shutdown!")
 
 
 if __name__ == "__main__":
-    print("Bot ishga tushirilmoqda...")
-    executor.start_polling(dp)
+    executor.start_polling(dp, on_startup=bot_on_startup, on_shutdown=bot_on_shutdown)
