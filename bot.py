@@ -220,22 +220,23 @@ async def start_menu(message: types.Message):
     keyboard = config.main_menu_keyboard
     user_count_docs = await collusers.count_documents({"_id": message.from_user.id})
     user_status_count_docs = await collusers.count_documents({"_id": message.from_user.id, "status": False})
-    refs_count = await collrefs.count_documents({"_id": int(message.text.split()[1])})
+
     if user_count_docs == 0:
-        if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
-                refs_count == 0:
-            # 1. Check start ref ID
-            # 2. Check tg self user ID
-            # 3. Check is there ref user ID in DB
-            await collrefs.insert_one(
-                {
-                    "_id": message.from_user.id,
-                    "_ref": int(message.text.split()[1])
-                }
-            )
-            await collusers.update_one({"_id": int(message.text.split()[1])}, {
-                "$inc": {"balance": 1}})
-            await account_registration_act(message)
+        if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]):
+            refs_count = await collrefs.count_documents({"_id": int(message.text.split()[1])})
+            if refs_count == 0:
+                # 1. Check start ref ID
+                # 2. Check tg self user ID
+                # 3. Check is there ref user ID in DB
+                await collrefs.insert_one(
+                    {
+                        "_id": message.from_user.id,
+                        "_ref": int(message.text.split()[1])
+                    }
+                )
+                await collusers.update_one({"_id": int(message.text.split()[1])}, {
+                    "$inc": {"balance": 1}})
+                await account_registration_act(message)
         else:
             await account_registration_act(message)
     elif user_status_count_docs == 1:
