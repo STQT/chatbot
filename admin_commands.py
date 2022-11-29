@@ -32,7 +32,7 @@ async def user_statistics():
 
 async def queue_statistics():
     x = collqueue.find()
-    user_list = [a for a in x]
+    user_list = [a async for a in x]
     ladys_list = []
     mans_list = []
     another_list = []
