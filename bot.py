@@ -220,9 +220,10 @@ async def start_menu(message: types.Message):
     keyboard = config.main_menu_keyboard
     user_count_docs = await collusers.count_documents({"_id": message.from_user.id})
     user_status_count_docs = await collusers.count_documents({"_id": message.from_user.id, "status": False})
+    refs_count = await collrefs.count_documents({"_id": int(message.text.split()[1])})
     if user_count_docs == 0:
         if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
-                collrefs.count_documents({"_id": int(message.text.split()[1])}) == 0:
+                refs_count == 0:
             # 1. Check start ref ID
             # 2. Check tg self user ID
             # 3. Check is there ref user ID in DB
@@ -247,7 +248,8 @@ async def start_menu(message: types.Message):
 
 @dp.message_handler(commands=["anketa", "set_bio", "new_bio", "about_me"])
 async def user_bio(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    users_count = await collusers.count_documents({"_id": message.from_user.id})
+    if users_count == 0:
         await account_user(message)
     else:
         keyboard = config.change_bio_keyboard
@@ -1092,7 +1094,8 @@ async def some_text(message: types.Message):
         return await user_photo(message)
     elif message.text == "🚫 Bekor qilish" or message.text == "✖️Bekor qilish":
         return await menu(message)
-    if collbans.count_documents({"id": message.from_user.id}) < 4:
+    bans_count = await collbans.count_documents({"id": message.from_user.id})
+    if bans_count < 4:
         chat = await collchats.find_one({"user_chat_id": message.chat.id})
         # if message.photo:
         #     await message.answer(message.photo[-1].file_id)
