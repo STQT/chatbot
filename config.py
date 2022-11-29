@@ -19,9 +19,14 @@ logging.basicConfig(
 admin_ids = 256665985, 390736292, 531409948, 556739283
 group_id = -650304675
 channel_urls_dict = ({
-                         "title": "A'zo bo'lish",
+                         "title": "1-chi kanal",
                          "link": "https://t.me/+ZwCfAKCjmeFkNmNi",
                          "username": "@moziy_nazar"
+                     },
+                     {
+                         "title": "2-chi kanal",
+                         "link": "https://t.me/+FSBzq4XwE3hjNGQy",
+                         "username": "@pogodas"
                      },
 )
 
