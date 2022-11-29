@@ -51,14 +51,14 @@ async def queue_statistics():
 async def chat_statistics():
     x = collchats.find()
     y = collchats.find({"status": False})
-    list1 = [a for a in x]
-    list2 = [b for b in y]
+    list1 = [a async for a in x]
+    list2 = [b async for b in y]
     return list1, list2
 
 
 async def delete_blocked_chats(message):
     if message.from_user.id in config.admin_ids:
-        collchats.delete_many({"status": False})
+        await collchats.delete_many({"status": False})
         await message.answer("Barcha nofaol chatlar o'chirildi")
     else:
         await message.answer("Bunday buyruq mavjud emas")
@@ -67,7 +67,7 @@ async def delete_blocked_chats(message):
 async def get_all_active_users():
     users_id = collusers.find()
     tg_users_id = []
-    for i in users_id:
+    async for i in users_id:
         if i.get("status", True):
             tg_users_id.append(i.get("_id", 0))
     return tg_users_id
@@ -76,16 +76,19 @@ async def get_all_active_users():
 async def get_all_inactive_users():
     user_list = []
     chats_inactive = collchats.find()
-    if chats_inactive:
+    chats_list = [i async for i in chats_inactive]
+    if chats_list:
         for user in chats_inactive:
             user_list.append(user.get("user_chat_id", 0))
     queue_inactive = collqueue.find()
-    if queue_inactive:
+    queue_list = [i async for i in queue_inactive]
+    if queue_list:
         for user in queue_inactive:
             user_list.append(user.get("_id", 0))
     users_id = collusers.find({"_id": {"$nin": list(set(user_list))}})
+    users_list = [i async for i in users_id]
     tg_users_id = []
-    for i in users_id:
+    for i in users_list:
         if i.get("status", True):
             tg_users_id.append(i.get("_id", 0))
     return tg_users_id
@@ -166,15 +169,15 @@ async def user_are_blocked_bot(message):
             [KeyboardButton("🔖 Anketa")]
         ], resize_keyboard=True)
     await message.answer("Ushbu foydalanuvchi botni tark etdi :( Boshqa suhbatdoshni qidiring!", reply_markup=keyboard)
-    collusers.update_one(
+    await collusers.update_one(
         {"_id": collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]},
         {"$set": {"status": False}})
-    collchats.delete_one({"user_chat_id": message.chat.id})
-    collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
+    await collchats.delete_one({"user_chat_id": message.chat.id})
+    await collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
 
 
 async def user_blocked_with_posting(user):
-    collusers.update_one({"_id": user}, {"$set": {"status": False}})
+    await collusers.update_one({"_id": user}, {"$set": {"status": False}})
     logging.warning(f"Ushbu {user} foydalanuvchi botni bloklagan")
 
 

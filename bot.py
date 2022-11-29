@@ -11,7 +11,8 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BotBlocked, BotKicked, UserDeactivated, Throttled, MessageNotModified
-from pymongo import MongoClient
+import motor.motor_asyncio
+# from pymongo import MongoClient
 
 import admin_commands
 import config
@@ -25,7 +26,8 @@ dp = Dispatcher(bot, storage=storage)
 class Connect(object):
     @staticmethod
     def get_connection():
-        return MongoClient("mongodb://127.0.0.1:27017/chatbot")
+        return motor.motor_asyncio.AsyncIOMotorClient("mongodb://127.0.0.1:27017/chatbot")
+        # return MongoClient("mongodb://127.0.0.1:27017/chatbot")
 
 
 cluster = Connect.get_connection()
@@ -78,7 +80,7 @@ async def handler_throttled(message: types.Message, **kwargs):
 
 
 async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
-    collprchatsqueue.insert_one({
+    await collprchatsqueue.insert_one({
         "sender": sender_id,
         "accepter": int(tg_id),
         "like": like
@@ -87,15 +89,15 @@ async def insert_db_prque(sender_id: int, tg_id: str, like: bool = False):
 
 
 async def get_random_boy_anketa(liked_user_list):
-    finded_docs = collusers.find({"gender": {"$nin": ["👩‍ Ayol kishi"]}})
-    for i in finded_docs:
+    # finded_docs = collusers.find({"gender": {"$nin": ["👩‍ Ayol kishi"]}})
+    async for i in await collusers.find({"gender": {"$nin": ["👩‍ Ayol kishi"]}}):
         if i and i.get('_id', None) not in liked_user_list and i.get('status', True):
             return i
 
 
 async def get_random_girl_anketa(liked_user_list):
-    finded_docs = collusers.find({"gender": {"$in": ["👩‍ Ayol kishi"]}})
-    for i in finded_docs:
+    # finded_docs = collusers.find({"gender": {"$in": ["👩‍ Ayol kishi"]}})
+    async for i in collusers.find({"gender": {"$in": ["👩‍ Ayol kishi"]}}):
         if i and i.get('_id', None) not in liked_user_list and i.get('status', True):
             return i
 
@@ -105,7 +107,7 @@ async def send_reaction_func(sender_id: int, callback_data: typing.Dict[str, str
     action = callback_data['action']
     if action == "yes":
         try:
-            sender_col = collusers.find_one({"_id": sender_id})
+            sender_col = await collusers.find_one({"_id": sender_id})
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
@@ -135,10 +137,9 @@ async def send_reaction_func(sender_id: int, callback_data: typing.Dict[str, str
 
 
 async def search_random_anketa(user_id: int):
-    acc = collusers.find_one({"_id": user_id})
+    acc = await collusers.find_one({"_id": user_id})
     liked_user_list = [user_id, ]
-
-    for i in collprchatsqueue.find({"sender": user_id}):
+    async for i in collprchatsqueue.find({"sender": user_id}):
         liked_user_list.append(i["accepter"])
     if acc.get("gender", None) == "👩‍ Ayol kishi":
         finded_doc = await get_random_boy_anketa(liked_user_list)
@@ -202,7 +203,7 @@ async def send_message_for_tg_id(message: types.Message, tg_id: int, anketa: boo
 
 
 async def confirm_pr_chat_users(first_id: int, second_id: int):
-    collprchats.insert_one({
+    await collprchats.insert_one({
         "first_id": first_id,
         "second_id": second_id})
 
@@ -217,28 +218,30 @@ async def menu(message: (types.Message, types.CallbackQuery)):
 @dp.throttled(on_throttled=handler_throttled, rate=2)
 async def start_menu(message: types.Message):
     keyboard = config.main_menu_keyboard
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_count_docs = await collusers.count_documents({"_id": message.from_user.id})
+    user_status_count_docs = await collusers.count_documents({"_id": message.from_user.id, "status": False})
+    if user_count_docs == 0:
         if len(message.text.split()) == 2 and message.from_user.id != int(message.text.split()[1]) and \
                 collrefs.count_documents({"_id": int(message.text.split()[1])}) == 0:
             # 1. Check start ref ID
             # 2. Check tg self user ID
             # 3. Check is there ref user ID in DB
-            collrefs.insert_one(
+            await collrefs.insert_one(
                 {
                     "_id": message.from_user.id,
                     "_ref": int(message.text.split()[1])
                 }
             )
-            collusers.update_one({"_id": int(message.text.split()[1])}, {
+            await collusers.update_one({"_id": int(message.text.split()[1])}, {
                 "$inc": {"balance": 1}})
             await account_registration_act(message)
         else:
             await account_registration_act(message)
-    elif collusers.count_documents({"_id": message.from_user.id, "status": False}) == 1:
-        collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
+    elif user_status_count_docs == 1:
+        await collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
         await message.answer("🏠 Bosh menyu", reply_markup=keyboard)
     else:
-        collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
+        await collusers.update_one({"_id": message.from_user.id}, {"$set": {"status": True}})
         await message.answer("🏠 Bosh menyu", reply_markup=keyboard)
 
 
@@ -253,7 +256,8 @@ async def user_bio(message: types.Message):
 
 @dp.message_handler(commands=["haqimda", "me_bio"])
 async def user_bio_change(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         await account_user(message)
     else:
         await SetBio.user_bio.set()
@@ -273,7 +277,8 @@ async def search_anketa(message: types.Message):
 
 @dp.message_handler(commands=["jins", "set_gender", "new_gender", "about_gender"])
 async def user_gender(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         await account_user(message)
     else:
         await SetBio.gender.set()
@@ -286,7 +291,8 @@ async def user_gender(message: types.Message):
 
 @dp.message_handler(commands=["qidiruv_jins", "set_finding", "new_finding", "about_finding"])
 async def user_finding(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         await account_user(message)
     else:
         await SetBio.finding.set()
@@ -299,7 +305,8 @@ async def user_finding(message: types.Message):
 
 @dp.message_handler(commands=["tahallus", "set_nickname", "new_nickname", "about_nickname"])
 async def user_tahallus(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         await account_user(message)
     else:
         await SetBio.nickname.set()
@@ -311,7 +318,8 @@ async def user_photo(message: types.Message):
     keyboard = ReplyKeyboardMarkup(
         [[KeyboardButton("✖️Bekor qilish"),
           ]], resize_keyboard=True, one_time_keyboard=True)
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         await account_user(message)
     else:
         await SetBio.photo.set()
@@ -349,14 +357,14 @@ async def process_set_finding(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["finding"] = message.text
         if data['finding'] == "👨‍ Yigit kishi":
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"finding": "👨‍ Yigit kishi"}})
         elif data['finding'] == '👩‍ Ayol kishi':
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"finding": "👩‍ Ayol kishi"}
             })
         else:
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"finding": "👤 Muhim emas"}
             })
 
@@ -370,10 +378,10 @@ async def process_set_gender(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["gender"] = message.text
         if data['gender'] == "👨‍ Yigit kishi":
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"gender": "👨‍ Yigit kishi"}})
         elif data['gender'] == '👩‍ Ayol kishi':
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"gender": "👩‍ Ayol kishi"}
             })
         else:
@@ -400,7 +408,7 @@ async def process_set_photo(message: types.Message, state: FSMContext):
         return await message.answer("Iltimos faqat rasm yuboring yoki bekor qiling")
     async with state.proxy() as data:
         data["user_photo"] = message.photo[-1].file_id
-        collusers.update_one({"_id": message.from_user.id}, {
+        await collusers.update_one({"_id": message.from_user.id}, {
             "$set": {"photo": data["user_photo"]}})
 
         await message.answer("Ma'lumotlar saqlandi")
@@ -418,12 +426,13 @@ async def referal_link(message: types.Message):
 
 @dp.message_handler(commands=["account"])
 async def account_user(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
         keyboard = ReplyKeyboardMarkup(
             [[KeyboardButton("📝 Ro'yxatdan o'tish")]], resize_keyboard=True, one_time_keyboard=True)
         await message.answer("Siz tizimda hali ro'yxatdan o'tmagansiz", reply_markup=keyboard)
     else:
-        acc = collusers.find_one({"_id": message.from_user.id})
+        acc = await collusers.find_one({"_id": message.from_user.id})
         text = f"👤Tahallusi: {acc.get('nickname', 'Mavjud emas')}\n" \
                f"💵 Referal: {acc.get('balance', 'Noaniq')}\n" \
                f"️Reyting: {acc.get('reputation', 'Noaniq')}\n" \
@@ -440,7 +449,8 @@ async def account_user(message: types.Message):
 
 @dp.message_handler(commands=["anketani", "remove_acc", "remove_account"])
 async def remove_account_act(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) != 0:
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts != 0:
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -461,8 +471,9 @@ async def remove_account_act(message: types.Message):
 
 @dp.message_handler(commands=["reg", "registration"])
 async def account_registration_act(message: types.Message):
-    if collusers.count_documents({"_id": message.from_user.id}) == 0:
-        collusers.insert_one(
+    user_counts = await collusers.count_documents({"_id": message.from_user.id})
+    if user_counts == 0:
+        await collusers.insert_one(
             {
                 "_id": message.from_user.id,
                 "nickname": message.from_user.first_name,
@@ -529,7 +540,7 @@ async def process_send_post(message: types.Message, state: FSMContext):
 async def process_set_bio_reg(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["user_bio"] = message.text
-        collusers.update_one({"_id": message.from_user.id}, {
+        await collusers.update_one({"_id": message.from_user.id}, {
             "$set": {"bio": data["user_bio"]}})
 
         # await message.answer("Ma'lumotlar saqlandi")
@@ -551,10 +562,10 @@ async def process_set_gender_reg(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data["gender"] = message.text
         if data['gender'] == "👨‍ Yigit kishi":
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"gender": "👨‍ Yigit kishi"}})
         elif data['gender'] == '👩‍ Ayol kishi':
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"gender": "👩‍ Ayol kishi"}
             })
         else:
@@ -580,7 +591,7 @@ async def process_set_city_reg(message: types.Message, state: FSMContext):
             await message.answer("Iltimos, mavjud shaxarlardan tanlang")
             await SetRegBio.city.set()
         else:
-            collusers.update_one({"_id": message.from_user.id}, {
+            await collusers.update_one({"_id": message.from_user.id}, {
                 "$set": {"city": data['city']}
             })
             await message.answer("Ma'lumotlar saqlandi")
@@ -596,23 +607,25 @@ async def search_user_act(message: types.Message):
             # if collusers.count_documents({"_id": message.from_user.id}) == 0:
             #     await account_user(message)
             # else:
-            if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
+            count_users = await collchats.count_documents({"user_chat_id": message.chat.id})
+            if count_users != 0:
                 keyboard = ReplyKeyboardMarkup(
                     [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True, one_time_keyboard=True)
                 await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
             else:
-                if collqueue.count_documents({"_id": message.chat.id}) != 1:
+                queue_counts = await collqueue.count_documents({"_id": message.chat.id})
+                if queue_counts != 1:
                     keyboard = ReplyKeyboardMarkup(
                         [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
-                    finder_acc = collusers.find_one({"_id": message.from_user.id})
+                    finder_acc = await collusers.find_one({"_id": message.from_user.id})
                     if finder_acc.get("gender") != "👩‍ Ayol kishi":
-                        interlocutor = collqueue.find_one({"_sex": {"$nin": ["👩‍ Ayol kishi"]}})
+                        interlocutor = await collqueue.find_one({"_sex": {"$nin": ["👩‍ Ayol kishi"]}})
                         if interlocutor is None:
-                            interlocutor = collqueue.find_one()
+                            interlocutor = await collqueue.find_one()
                     else:
-                        interlocutor = collqueue.find_one({"reputation": True})
+                        interlocutor = await collqueue.find_one({"reputation": True})
                         if interlocutor is None:
-                            interlocutor = collqueue.find_one()
+                            interlocutor = await collqueue.find_one()
                     # queue_search = list(collqueue.aggregate([{"$sample": {"size": 1}}]))
                     # if queue_search:
                     #     if queue_search[0]["_id"] != message.chat.id:
@@ -650,8 +663,8 @@ async def search_user_act(message: types.Message):
                     #     elif user_gender_var == "👤 Muhim emas" and user_find == "👤 Muhim emas":
                     #         interlocutor = collqueue.find_one({})
                     if interlocutor is None:
-                        acc = collusers.find_one({"_id": message.from_user.id})
-                        collqueue.insert_one({
+                        acc = await collusers.find_one({"_id": message.from_user.id})
+                        await collqueue.insert_one({
                             "_id": message.chat.id,
                             "_sex": acc.get('gender'),
                             # "_finding": acc.get('finding')
@@ -659,17 +672,18 @@ async def search_user_act(message: types.Message):
                         await message.answer(
                             "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
                     else:
-                        if collqueue.count_documents({"_id": interlocutor["_id"]}) != 0:
-                            collqueue.delete_one({"_id": message.chat.id})
-                            collqueue.delete_one({"_id": interlocutor["_id"]})
+                        queue_counts = await collqueue.count_documents({"_id": interlocutor["_id"]})
+                        if queue_counts != 0:
+                            await collqueue.delete_one({"_id": message.chat.id})
+                            await collqueue.delete_one({"_id": interlocutor["_id"]})
 
-                            collchats.insert_one(
+                            await collchats.insert_one(
                                 {
                                     "user_chat_id": message.chat.id,
                                     "interlocutor_chat_id": interlocutor["_id"]
                                 }
                             )
-                            collchats.insert_one(
+                            await collchats.insert_one(
                                 {
                                     "user_chat_id": interlocutor["_id"],
                                     "interlocutor_chat_id": message.chat.id
@@ -691,7 +705,7 @@ async def search_user_act(message: types.Message):
                                 KeyboardButton(
                                     "💔 Suhbatni yakunlash")]],
                                 resize_keyboard=True, one_time_keyboard=True)
-                            chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
+                            chat_info = await collchats.find_one({"user_chat_id": message.chat.id})[
                                 "interlocutor_chat_id"]
                             # TODO blocking users look bot-log-01-26.log
                             await message.answer(
@@ -710,7 +724,7 @@ async def search_user_act(message: types.Message):
                                 chat_id=chat_info,
                                 reply_markup=keyboard_leave)
                         else:
-                            collqueue.insert_one({"_id": message.chat.id})
+                            await collqueue.insert_one({"_id": message.chat.id})
                             logging.warning("Shu joyi qachondir ishlarmikin?!")
                             await message.answer(
                                 "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
@@ -723,24 +737,26 @@ async def search_user_act(message: types.Message):
 
 
 async def search_girl_func():
-    interlocutor = collqueue.find_one({"_sex": "👩‍ Ayol kishi"})
+    interlocutor = await collqueue.find_one({"_sex": "👩‍ Ayol kishi"})
     return interlocutor
 
 
 @dp.message_handler(commands=["search_girl", "searchgirl"])
 async def search_girl_act(message: types.Message):
     user_follow_act = await admin_commands.is_authenticated(message)
-    acc = collusers.find_one({"_id": message.from_user.id})
+    acc = await collusers.find_one({"_id": message.from_user.id})
     if not acc:
         await account_registration_act(message)
     if user_follow_act and acc.get("balance", 0) > 9:
         if message.chat.type == "private":
-            if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
+            chats_counts = await collchats.count_documents({"user_chat_id": message.chat.id})
+            if chats_counts != 0:
                 keyboard = ReplyKeyboardMarkup(
                     [[KeyboardButton("💔 Suhbatni yakunlash")]], resize_keyboard=True, one_time_keyboard=True)
                 await message.answer("Siz hozirda kim bilandir suhbatlashyapsiz", reply_markup=keyboard)
             else:
-                if collqueue.count_documents({"_id": message.chat.id}) != 1:
+                queue_counts = await collqueue.count_documents({"_id": message.chat.id})
+                if queue_counts != 1:
                     keyboard = ReplyKeyboardMarkup(
                         [[KeyboardButton("📛 Izlashni to'xtatish")]], resize_keyboard=True)
                     interlocutor = await search_girl_func()
@@ -757,23 +773,24 @@ async def search_girl_act(message: types.Message):
                                                  reply_markup=keyboard)
 
                     if interlocutor is None:
-                        collqueue.insert_one({
+                        await collqueue.insert_one({
                             "_id": message.chat.id,
                             "reputation": True,
                             # "_finding": acc.get('finding')
                         })
                     else:
-                        if collqueue.count_documents({"_id": interlocutor["_id"]}) != 0:
-                            collqueue.delete_one({"_id": message.chat.id})
-                            collqueue.delete_one({"_id": interlocutor["_id"]})
+                        interlocutor_queue_counts = await collqueue.count_documents({"_id": interlocutor["_id"]})
+                        if interlocutor_queue_counts != 0:
+                            await collqueue.delete_one({"_id": message.chat.id})
+                            await collqueue.delete_one({"_id": interlocutor["_id"]})
 
-                            collchats.insert_one(
+                            await collchats.insert_one(
                                 {
                                     "user_chat_id": message.chat.id,
                                     "interlocutor_chat_id": interlocutor["_id"]
                                 }
                             )
-                            collchats.insert_one(
+                            await collchats.insert_one(
                                 {
                                     "user_chat_id": interlocutor["_id"],
                                     "interlocutor_chat_id": message.chat.id
@@ -783,7 +800,7 @@ async def search_girl_act(message: types.Message):
                                 KeyboardButton(
                                     "💔 Suhbatni yakunlash")]],
                                 resize_keyboard=True, one_time_keyboard=True)
-                            chat_info = collchats.find_one({"user_chat_id": message.chat.id})[
+                            chat_info = await collchats.find_one({"user_chat_id": message.chat.id})[
                                 "interlocutor_chat_id"]
 
                             await message.answer(
@@ -794,7 +811,7 @@ async def search_girl_act(message: types.Message):
                                 chat_id=chat_info,
                                 reply_markup=keyboard_leave)
                         else:
-                            collqueue.insert_one({"_id": message.chat.id})
+                            await collqueue.insert_one({"_id": message.chat.id})
                             logging.warning("Shu joyi qachondir ishlarmikin?!")
                             await message.answer(
                                 "🕒 Suhbatdoshni izlash boshlandi...", reply_markup=keyboard)
@@ -808,8 +825,9 @@ async def search_girl_act(message: types.Message):
 
 @dp.message_handler(commands=["stop_search"])
 async def stop_search_act(message: types.Message):
-    if collqueue.count_documents({"_id": message.chat.id}) != 0:
-        collqueue.delete_one({"_id": message.chat.id})
+    queue_counts = await collqueue.count_documents({"_id": message.chat.id})
+    if queue_counts != 0:
+        await collqueue.delete_one({"_id": message.chat.id})
         await menu(message)
     else:
         await message.answer("Siz suhbatdosh izlamayapsiz")
@@ -818,11 +836,12 @@ async def stop_search_act(message: types.Message):
 
 @dp.message_handler(commands=["ha"])
 async def yes_rep_act(message: types.Message):
-    if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
-        collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
+    user_chats_counts = await collchats.count_documents({"user_chat_id": message.chat.id})
+    if user_chats_counts != 0:
+        await collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
             "interlocutor_chat_id"]}, {"$inc": {"reputation": 5}})
-        collchats.delete_one({"user_chat_id": message.chat.id})
-        collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
+        await collchats.delete_one({"user_chat_id": message.chat.id})
+        await collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
         keyboard = config.main_menu_keyboard
         await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
     else:
@@ -832,11 +851,12 @@ async def yes_rep_act(message: types.Message):
 
 @dp.message_handler(commands=["yoq"])
 async def no_rep_act(message: types.Message):
-    if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
-        collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
+    chats_count = await collchats.count_documents({"user_chat_id": message.chat.id})
+    if chats_count != 0:
+        await collusers.update_one({"_id": collchats.find_one({"user_chat_id": message.chat.id})[
             "interlocutor_chat_id"]}, {"$inc": {"reputation": -5}})
-        collchats.delete_one({"user_chat_id": message.chat.id})
-        collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
+        await collchats.delete_one({"user_chat_id": message.chat.id})
+        await collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
         keyboard = config.main_menu_keyboard
         await message.answer("Javobingiz uchun rahmat!☺️", reply_markup=keyboard)
     else:
@@ -846,13 +866,14 @@ async def no_rep_act(message: types.Message):
 
 @dp.message_handler(commands=["report_user"])
 async def report_rep_act(message: types.Message):
-    if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
-        rep_user_id = collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]
-        collusers.update_one({"_id": rep_user_id}, {"$inc": {"reputation": -25}})
-        collbans.insert_one({"id": rep_user_id,
-                             "time": int(message.date.timestamp())})
-        collchats.delete_one({"user_chat_id": message.chat.id})
-        collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
+    chats_count = await collchats.count_documents({"user_chat_id": message.chat.id})
+    if chats_count != 0:
+        rep_user_id = await collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]
+        await collusers.update_one({"_id": rep_user_id}, {"$inc": {"reputation": -25}})
+        await collbans.insert_one({"id": rep_user_id,
+                                   "time": int(message.date.timestamp())})
+        await collchats.delete_one({"user_chat_id": message.chat.id})
+        await collchats.update_many({"interlocutor_chat_id": message.chat.id}, {"$set": {"status": False}})
         keyboard = config.main_menu_keyboard
         await message.answer("Shikoyatingiz qabul qilindi!☺️", reply_markup=keyboard)
     else:
@@ -862,9 +883,9 @@ async def report_rep_act(message: types.Message):
 
 @dp.message_handler(commands=['stat'])
 async def mini_stats_info(message: types.Message):
-    users = cluster.chatbot.command('collstats', 'users')
-    queue_stats = cluster.chatbot.command('collstats', 'queue')
-    chats = cluster.chatbot.command('collstats', 'chats')
+    users = await cluster.chatbot.command('collstats', 'users')
+    queue_stats = await cluster.chatbot.command('collstats', 'queue')
+    chats = await cluster.chatbot.command('collstats', 'chats')
     msg = "Statistika:\n" \
           f"Users: {users.get('count', '0')}\n" \
           f"Chats: {chats.get('count', '0')}\n" \
@@ -903,7 +924,8 @@ async def all_stats_info(message: types.Message):
 
 @dp.message_handler(commands=["yakunlash", "leave", "leave_chat"])
 async def leave_from_chat_act(message: types.Message):
-    if collchats.count_documents({"user_chat_id": message.chat.id}) != 0:
+    chats_count = await collchats.count_documents({"user_chat_id": message.chat.id})
+    if chats_count != 0:
         await message.answer("Siz chatni tark etdingiz")
         keyboard = ReplyKeyboardMarkup(
             [
@@ -928,7 +950,7 @@ async def leave_from_chat_act(message: types.Message):
                                        {"user_chat_id": message.chat.id}).get("user_chat_id"),
                                    reply_markup=keyboard)
         except Exception as e:
-            collchats.delete_one({"user_chat_id": message.chat.id})
+            await collchats.delete_one({"user_chat_id": message.chat.id})
             await menu(message)
             logging.error(f"Ushbu foydalanuvchida xato yuz berdi: {e}")
 
@@ -969,7 +991,7 @@ async def following_channel(msg):
 @dp.message_handler(commands=["repost"])
 async def reposting_bot(msg):
     try:
-        acc = collusers.find_one({"_id": msg.from_user.id})
+        acc = await collusers.find_one({"_id": msg.from_user.id})
         balance = acc.get('balance', 0)
         keyboard = InlineKeyboardMarkup()
         keyboard.add(InlineKeyboardButton("Do'st topish", url=f"https://t.me/davra_bot?start={msg.from_user.id}"))
@@ -1071,7 +1093,7 @@ async def some_text(message: types.Message):
     elif message.text == "🚫 Bekor qilish" or message.text == "✖️Bekor qilish":
         return await menu(message)
     if collbans.count_documents({"id": message.from_user.id}) < 4:
-        chat = collchats.find_one({"user_chat_id": message.chat.id})
+        chat = await collchats.find_one({"user_chat_id": message.chat.id})
         # if message.photo:
         #     await message.answer(message.photo[-1].file_id)
         if message.text == "☕ Anketalardan izlash":
@@ -1087,10 +1109,12 @@ async def some_text(message: types.Message):
         elif message.text == "🏠 Bosh menyu":
             return await menu(message)
         elif chat:
+            chat_id = await collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]
             if message.content_type == "text":
                 try:
+                    chat_id = await collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"]
                     await bot.send_message(
-                        chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                        chat_id=chat_id,
                         text=message.text, entities=message.entities)
                 except (BotKicked, BotBlocked, UserDeactivated):
                     await admin_commands.user_are_blocked_bot(message)
@@ -1098,49 +1122,49 @@ async def some_text(message: types.Message):
                 if message.content_type == "sticker":
                     try:
                         await bot.send_sticker(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             sticker=message.sticker["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "photo":
                     try:
                         await bot.send_photo(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             photo=message.photo[len(message.photo) - 1].file_id)
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "voice":
                     try:
                         await bot.send_voice(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             voice=message.voice["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "document":
                     try:
                         await bot.send_document(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             document=message.document["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "video":
                     try:
                         await bot.send_video(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             video=message.video["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "video_note":
                     try:
                         await bot.send_video_note(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             video_note=message.video_note["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
                 elif message.content_type == "animation":
                     try:
                         await bot.send_animation(
-                            chat_id=collchats.find_one({"user_chat_id": message.chat.id})["interlocutor_chat_id"],
+                            chat_id=chat_id,
                             animation=message.document["file_id"])
                     except (BotKicked, BotBlocked, UserDeactivated):
                         await admin_commands.user_are_blocked_bot(message)
@@ -1150,7 +1174,7 @@ async def some_text(message: types.Message):
                      [KeyboardButton("🗣 Shikoyat berish")]], resize_keyboard=True)
                 await message.answer("Suhbatdoshingiz chatni tark etgan! Spam qilmang!", reply_markup=keyboard)
     else:
-        ban_time = collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
+        ban_time = await collbans.find_one({"id": message.from_user.id}, sort=[('time', -1)])['time']
         current_time = message.date.timestamp()
         time_has_passed_seconds = current_time - ban_time
         active_time = ban_time + config.ban_seconds + 18000  # UTC +5
@@ -1163,7 +1187,7 @@ async def some_text(message: types.Message):
             await asyncio.sleep(1)
             await message.answer("Blokdan chiqish jarayoni... ⏳")
             await asyncio.sleep(2)
-            collbans.delete_many({"id": message.from_user.id})
+            await collbans.delete_many({"id": message.from_user.id})
             await asyncio.sleep(2)
             await message.answer("Siz muvaffaqiyatli blokdan chiqdingiz!\n"
                                  "Iltimos qoidalarni buzmang😉")
@@ -1173,7 +1197,7 @@ async def some_text(message: types.Message):
 async def process_remove_account(callback: types.CallbackQuery):
     await callback.answer()
     try:
-        collusers.delete_one({"_id": callback.from_user.id})
+        await collusers.delete_one({"_id": callback.from_user.id})
         await callback.message.answer("Siz muvaffaqiyatli anketangizni o'chirdingiz")
         await menu(callback.message)
     except Exception as e:
@@ -1324,7 +1348,7 @@ async def get_message(message: types.Message, state: FSMContext):
                     await message.answer("Bekor qilindi")
                     await menu(message)
                     return await state.finish()
-                user = collusers.find_one({"_id": message.from_user.id})
+                user = await collusers.find_one({"_id": message.from_user.id})
                 await send_message_for_tg_id(message, int(data['user_id']), anketa=True, nickname=user.get('nickname'))
                 await message.answer("Xatingiz yuborildi!")
                 await menu(message)
