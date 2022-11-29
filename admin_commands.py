@@ -10,7 +10,7 @@ from bot import collusers, collqueue, collchats, bot
 
 async def user_statistics():
     x = collusers.find({"status": True})
-    user_list = [a for a in x]
+    user_list = [a async for a in x]
     ladys_list = []
     mans_list = []
     another_list = []
@@ -22,9 +22,9 @@ async def user_statistics():
             mans_list.append(i)
         else:
             another_list.append(i)
-    blocked = collusers.count_documents({"status": False})
-    all_users = collusers.count_documents({"status": True})
-    users_count = collusers.count_documents({})
+    blocked = await collusers.count_documents({"status": False})
+    all_users = await collusers.count_documents({"status": True})
+    users_count = await collusers.count_documents({})
     text = f'👩: {len(ladys_list)}\n👨: {len(mans_list)}\nJinsni kiritmaganlar: {len(another_list)}\n' \
            f'Blocked: {blocked}\n*All active users*: {all_users}\n*All users*: {users_count}'
     return text
